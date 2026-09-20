@@ -1,8 +1,10 @@
-﻿Imports System.Data.SqlClient
+Imports System.Data.SqlClient
+Imports System.Drawing
+Imports System.Windows.Forms
 
 Public Class Add_SparePart
 
-    Private txtPhoneNumber As TextBox ' For Step 1 - editable
+    Private txtPhoneNumber As TextBox
     Private txtSupplierName As TextBox
     Private txtAddress As TextBox
     Private txtPartNumber As TextBox
@@ -12,38 +14,34 @@ Public Class Add_SparePart
     Private cmbCategory As ComboBox
     Private cmbCondition As ComboBox
 
-
     Private currentSupplierID As Integer = -1
     Private currentSupplierName As String = ""
     Private isNewSupplier As Boolean = False
-    Private savedPhoneNumber As String = "" ' To save phone from step 1
+    Private savedPhoneNumber As String = ""
 
     Private Sub Add_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-
+        ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Add Spare Parts"
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.Size = New Size(550, 550)
-        Me.BackColor = Color.FromArgb(248, 249, 250)
-
-
+        Me.Size = New Size(720, 620)
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
         CreateTitle()
-
-        ' Start with supplier check section
         ShowSupplierCheckSection()
     End Sub
 
     Private Sub CreateTitle()
         Dim lblTitle As New Label With {
-            .Text = "ADD SPARE PARTS",
-            .Font = New Font("Arial", 14, FontStyle.Bold),
-            .ForeColor = Color.Navy,
-            .Location = New Point(150, 20),
-            .Size = New Size(250, 30),
+            .Text = "Add Spare Parts",
+            .Font = New Font("Segoe UI", 22, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(30, 24),
+            .Size = New Size(300, 38),
             .Name = "lblTitle"
         }
         Me.Controls.Add(lblTitle)
     End Sub
-
 
     Private Sub ClearFormExceptTitle()
         Dim controlsToRemove As New List(Of Control)
@@ -59,238 +57,189 @@ Public Class Add_SparePart
         Next
     End Sub
 
-
     Private Sub ShowSupplierCheckSection()
         ClearFormExceptTitle()
 
-        ' Label
+        Dim panel As New Panel With {
+            .Location = New Point(30, 80),
+            .Size = New Size(640, 260),
+            .BackColor = Color.White,
+            .Padding = New Padding(20)
+        }
+        Me.Controls.Add(panel)
+
         Dim lblPhone As New Label With {
-            .Text = "Supplier Phone Number:",
-            .Location = New Point(50, 80),
-            .Size = New Size(180, 25),
-            .Font = New Font("Arial", 10)
+            .Text = "Supplier phone number",
+            .Location = New Point(20, 24),
+            .Size = New Size(200, 30),
+            .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblPhone)
+        panel.Controls.Add(lblPhone)
 
-        ' TextBox for phone (EDITABLE in Step 1)
-        txtPhoneNumber = New TextBox With {
-            .Location = New Point(240, 80),
-            .Size = New Size(150, 25),
-            .Font = New Font("Arial", 10),
-            .Name = "txtPhoneNumber"
-        }
-        Me.Controls.Add(txtPhoneNumber)
+        txtPhoneNumber = ModernTheme.MakeTextBox()
+        txtPhoneNumber.Location = New Point(220, 20)
+        txtPhoneNumber.Width = 180
+        panel.Controls.Add(txtPhoneNumber)
 
-        ' Check Supplier Button
-        Dim btnCheck As New Button With {
-            .Text = "Check Supplier",
-            .Location = New Point(400, 78),
-            .Size = New Size(120, 30),
-            .BackColor = Color.FromArgb(59, 130, 246),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 9, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnCheck As Button = ModernTheme.MakePrimaryButton("Check supplier")
+        btnCheck.Location = New Point(420, 18)
+        btnCheck.Width = 160
         AddHandler btnCheck.Click, AddressOf btnCheckSupplier_Click
-        Me.Controls.Add(btnCheck)
+        panel.Controls.Add(btnCheck)
 
-        ' Cancel Button
-        Dim btnCancel As New Button With {
-            .Text = "Cancel",
-            .Location = New Point(400, 120),
-            .Size = New Size(120, 30),
-            .BackColor = Color.FromArgb(239, 68, 68),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 9, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(420, 72)
+        btnCancel.Width = 160
+        btnCancel.BackColor = ModernTheme.SurfaceAlt
+        btnCancel.ForeColor = ModernTheme.Danger
         AddHandler btnCancel.Click, AddressOf btnCancel_Click
-        Me.Controls.Add(btnCancel)
+        panel.Controls.Add(btnCancel)
     End Sub
-
 
     Private Sub btnCheckSupplier_Click(sender As Object, e As EventArgs)
         Dim phoneNumber As String = txtPhoneNumber.Text.Trim()
 
         If String.IsNullOrEmpty(phoneNumber) Then
-            MessageBox.Show("Please enter supplier phone number", "Input Required",
-                          MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            MessageBox.Show("Please enter supplier phone number", "Input Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
         savedPhoneNumber = phoneNumber
 
         Try
-
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-
-
                 Dim sql As String = "SELECT SupplierID, SupplierName FROM mn.Supplier WHERE Phone = @phone"
                 Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@phone", phoneNumber)
-
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         If reader.Read() Then
-                            ' Supplier exists
                             currentSupplierID = reader.GetInt32(0)
                             currentSupplierName = reader.GetString(1)
                             isNewSupplier = False
                         Else
-                            ' New supplier
                             isNewSupplier = True
                         End If
                     End Using
                 End Using
-
                 conn.Close()
             End Using
 
-
             If Not isNewSupplier Then
-
                 ShowPartEntrySection()
             Else
-
                 ShowNewSupplierSection()
             End If
 
         Catch ex As Exception
-            MessageBox.Show("Error checking supplier: " & ex.Message, "Database Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error checking supplier: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-
 
     Private Sub ShowNewSupplierSection()
         ClearFormExceptTitle()
 
+        Dim panel As New Panel With {
+            .Location = New Point(30, 80),
+            .Size = New Size(640, 360),
+            .BackColor = Color.White,
+            .Padding = New Padding(20)
+        }
+        Me.Controls.Add(panel)
 
         Dim lblSectionTitle As New Label With {
-            .Text = "New Supplier Information",
-            .Font = New Font("Arial", 11, FontStyle.Bold),
-            .Location = New Point(50, 60),
-            .Size = New Size(300, 25),
-            .ForeColor = Color.DarkBlue
+            .Text = "New supplier information",
+            .Font = New Font("Segoe UI", 16, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(20, 18),
+            .AutoSize = True
         }
-        Me.Controls.Add(lblSectionTitle)
-
+        panel.Controls.Add(lblSectionTitle)
 
         Dim lblPhoneLabel As New Label With {
-            .Text = "Phone Number:",
-            .Location = New Point(50, 100),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
+            .Text = "Phone number",
+            .Location = New Point(20, 70),
+            .Size = New Size(130, 24),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblPhoneLabel)
+        panel.Controls.Add(lblPhoneLabel)
 
-        Dim txtPhoneReadOnly As New TextBox With {
-            .Location = New Point(180, 100),
-            .Size = New Size(200, 25),
-            .Font = New Font("Arial", 10),
-            .Text = savedPhoneNumber,
-            .ReadOnly = True, ' THIS MAKES IT READ-ONLY
-            .BackColor = Color.FromArgb(240, 240, 240), ' Gray background to indicate read-only
-            .ForeColor = Color.DarkGreen,
-            .BorderStyle = BorderStyle.FixedSingle
-        }
-        Me.Controls.Add(txtPhoneReadOnly)
-
+        Dim txtPhoneReadOnly As TextBox = ModernTheme.MakeTextBox()
+        txtPhoneReadOnly.Location = New Point(170, 66)
+        txtPhoneReadOnly.Width = 260
+        txtPhoneReadOnly.ReadOnly = True
+        txtPhoneReadOnly.Text = savedPhoneNumber
+        panel.Controls.Add(txtPhoneReadOnly)
 
         Dim lblSupName As New Label With {
-            .Text = "Supplier Name: *",
-            .Location = New Point(50, 140),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
+            .Text = "Supplier name *",
+            .Location = New Point(20, 120),
+            .Size = New Size(130, 24),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblSupName)
+        panel.Controls.Add(lblSupName)
 
-        txtSupplierName = New TextBox With {
-            .Location = New Point(180, 140),
-            .Size = New Size(200, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtSupplierName)
-
+        txtSupplierName = ModernTheme.MakeTextBox()
+        txtSupplierName.Location = New Point(170, 116)
+        txtSupplierName.Width = 260
+        panel.Controls.Add(txtSupplierName)
 
         Dim lblAddress As New Label With {
-            .Text = "Address:",
-            .Location = New Point(50, 180),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
+            .Text = "Address",
+            .Location = New Point(20, 170),
+            .Size = New Size(130, 24),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblAddress)
+        panel.Controls.Add(lblAddress)
 
-        txtAddress = New TextBox With {
-            .Location = New Point(180, 180),
-            .Size = New Size(200, 60),
-            .Multiline = True,
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtAddress)
+        txtAddress = ModernTheme.MakeTextBox()
+        txtAddress.Location = New Point(170, 166)
+        txtAddress.Width = 260
+        txtAddress.Height = 80
+        txtAddress.Multiline = True
+        panel.Controls.Add(txtAddress)
 
-
-        Dim btnContinue As New Button With {
-            .Text = "Continue to Add Parts",
-            .Location = New Point(180, 260),
-            .Size = New Size(180, 35),
-            .BackColor = Color.FromArgb(34, 197, 94),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnContinue As Button = ModernTheme.MakePrimaryButton("Continue to add parts")
+        btnContinue.Location = New Point(170, 270)
+        btnContinue.Width = 170
         AddHandler btnContinue.Click, AddressOf btnContinueToParts_Click
-        Me.Controls.Add(btnContinue)
+        panel.Controls.Add(btnContinue)
 
-        Dim btnBack As New Button With {
-            .Text = "Back",
-            .Location = New Point(370, 260),
-            .Size = New Size(80, 35),
-            .BackColor = Color.FromArgb(156, 163, 175),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnBack As Button = ModernTheme.MakeSecondaryButton("Back")
+        btnBack.Location = New Point(360, 270)
+        btnBack.Width = 120
+        btnBack.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnBack.Click, AddressOf btnBackToSupplierCheck_Click
-        Me.Controls.Add(btnBack)
+        panel.Controls.Add(btnBack)
     End Sub
 
     Private Sub btnContinueToParts_Click(sender As Object, e As EventArgs)
         If String.IsNullOrEmpty(txtSupplierName.Text.Trim()) Then
-            MessageBox.Show("Supplier name is required", "Validation Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Supplier name is required", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             txtSupplierName.Focus()
             Return
         End If
 
         Try
-            ' Use a fresh connection
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-
-                ' Insert new supplier
-                Dim sql As String = "INSERT INTO mn.Supplier (SupplierName, Phone, Address, CreatedAt) " &
-                                   "OUTPUT INSERTED.SupplierID " &
-                                   "VALUES (@name, @phone, @address, GETDATE())"
-
+                Dim sql As String = "INSERT INTO mn.Supplier (SupplierName, Phone, Address, CreatedAt) OUTPUT INSERTED.SupplierID VALUES (@name, @phone, @address, GETDATE())"
                 Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@name", txtSupplierName.Text.Trim())
                     cmd.Parameters.AddWithValue("@phone", savedPhoneNumber)
                     cmd.Parameters.AddWithValue("@address", If(String.IsNullOrEmpty(txtAddress.Text), DBNull.Value, txtAddress.Text.Trim()))
-
                     currentSupplierID = CInt(cmd.ExecuteScalar())
                     currentSupplierName = txtSupplierName.Text.Trim()
                 End Using
-
                 conn.Close()
             End Using
-
-            ' Show part entry section
             ShowPartEntrySection()
-
         Catch ex As Exception
-            MessageBox.Show("Error creating supplier: " & ex.Message, "Database Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error creating supplier: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -298,249 +247,188 @@ Public Class Add_SparePart
         ShowSupplierCheckSection()
     End Sub
 
-
     Private Sub ShowPartEntrySection()
         ClearFormExceptTitle()
 
-
-        Dim lblSupplierInfo As New Label With {
-            .Text = $"Supplier: {currentSupplierName}",
-            .Font = New Font("Arial", 11, FontStyle.Bold),
-            .Location = New Point(50, 70),
-            .Size = New Size(400, 25),
-            .ForeColor = Color.DarkGreen
+        Dim panel As New Panel With {
+            .Location = New Point(30, 80),
+            .Size = New Size(640, 470),
+            .BackColor = Color.White,
+            .Padding = New Padding(20)
         }
-        Me.Controls.Add(lblSupplierInfo)
+        Me.Controls.Add(panel)
 
-        ' Part Number
+        Dim supplierInfo As New Label With {
+            .Text = "Supplier: " & currentSupplierName,
+            .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+            .Location = New Point(20, 18),
+            .ForeColor = ModernTheme.PrimaryText,
+            .AutoSize = True
+        }
+        panel.Controls.Add(supplierInfo)
+
         Dim lblPartNumber As New Label With {
-            .Text = "Part Number:",
-            .Location = New Point(50, 110),
-            .Size = New Size(100, 25),
-            .Font = New Font("Arial", 10)
+            .Text = "Part number",
+            .Location = New Point(20, 70),
+            .Size = New Size(120, 25),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblPartNumber)
+        panel.Controls.Add(lblPartNumber)
 
-        txtPartNumber = New TextBox With {
-            .Location = New Point(160, 110),
-            .Size = New Size(150, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtPartNumber)
+        txtPartNumber = ModernTheme.MakeTextBox()
+        txtPartNumber.Location = New Point(150, 66)
+        txtPartNumber.Width = 200
+        panel.Controls.Add(txtPartNumber)
 
-        ' Check Part Button
-        Dim btnCheckPart As New Button With {
-            .Text = "Check Part",
-            .Location = New Point(320, 108),
-            .Size = New Size(100, 30),
-            .BackColor = Color.FromArgb(59, 130, 246),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 9, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnCheckPart As Button = ModernTheme.MakePrimaryButton("Check part")
+        btnCheckPart.Location = New Point(370, 66)
+        btnCheckPart.Width = 170
         AddHandler btnCheckPart.Click, AddressOf btnCheckPart_Click
-        Me.Controls.Add(btnCheckPart)
+        panel.Controls.Add(btnCheckPart)
 
-        ' Description Label (hidden initially)
         Dim lblDescription As New Label With {
-            .Text = "Description:",
-            .Location = New Point(50, 150),
-            .Size = New Size(100, 25),
-            .Font = New Font("Arial", 10),
-            .Visible = False
+            .Text = "Description",
+            .Location = New Point(20, 122),
+            .Size = New Size(120, 25),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblDescription)
+        panel.Controls.Add(lblDescription)
 
-
-        txtDescription = New TextBox With {
-            .Location = New Point(160, 150),
-            .Size = New Size(260, 60),
-            .Multiline = True,
-            .ScrollBars = ScrollBars.Vertical,
-            .Font = New Font("Arial", 10),
-            .Visible = False
-        }
-        Me.Controls.Add(txtDescription)
-
+        txtDescription = ModernTheme.MakeTextBox()
+        txtDescription.Location = New Point(150, 118)
+        txtDescription.Width = 390
+        txtDescription.Height = 80
+        txtDescription.Multiline = True
+        panel.Controls.Add(txtDescription)
 
         Dim lblQuantity As New Label With {
-            .Text = "Quantity:",
-            .Location = New Point(50, 230),
-            .Size = New Size(100, 25),
-            .Font = New Font("Arial", 10),
-            .Visible = False
+            .Text = "Quantity",
+            .Location = New Point(20, 220),
+            .Size = New Size(120, 25),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblQuantity)
+        panel.Controls.Add(lblQuantity)
 
-
-        txtQuantity = New TextBox With {
-            .Location = New Point(160, 230),
-            .Size = New Size(100, 25),
-            .Font = New Font("Arial", 10),
-            .Text = "1",
-            .Visible = False
-        }
-        Me.Controls.Add(txtQuantity)
+        txtQuantity = ModernTheme.MakeTextBox()
+        txtQuantity.Location = New Point(150, 216)
+        txtQuantity.Width = 120
+        txtQuantity.Text = "1"
+        panel.Controls.Add(txtQuantity)
 
         Dim lblUnitPrice As New Label With {
-            .Text = "Unit Price ($):",
-            .Location = New Point(50, 270),
-            .Size = New Size(100, 25),
-            .Font = New Font("Arial", 10),
-            .Visible = False
+            .Text = "Unit price",
+            .Location = New Point(300, 220),
+            .Size = New Size(120, 25),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblUnitPrice)
+        panel.Controls.Add(lblUnitPrice)
 
-
-        txtUnitPrice = New TextBox With {
-            .Location = New Point(160, 270),
-            .Size = New Size(100, 25),
-            .Font = New Font("Arial", 10),
-            .Text = "0.00",
-            .Visible = False
-        }
-        Me.Controls.Add(txtUnitPrice)
-
+        txtUnitPrice = ModernTheme.MakeTextBox()
+        txtUnitPrice.Location = New Point(420, 216)
+        txtUnitPrice.Width = 120
+        txtUnitPrice.Text = "0.00"
+        panel.Controls.Add(txtUnitPrice)
 
         Dim lblCategory As New Label With {
-            .Text = "Category:",
-            .Location = New Point(50, 310),
-            .Size = New Size(100, 25),
-            .Font = New Font("Arial", 10),
-            .Visible = False
+            .Text = "Category",
+            .Location = New Point(20, 270),
+            .Size = New Size(120, 25),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblCategory)
-
+        panel.Controls.Add(lblCategory)
 
         cmbCategory = New ComboBox With {
-            .Location = New Point(160, 310),
-            .Size = New Size(150, 25),
+            .Location = New Point(150, 266),
+            .Size = New Size(160, 25),
             .DropDownStyle = ComboBoxStyle.DropDownList,
-            .Font = New Font("Arial", 10),
-            .Visible = False
+            .Font = New Font("Segoe UI", 10.0F)
         }
         LoadCategories()
-        Me.Controls.Add(cmbCategory)
-
+        panel.Controls.Add(cmbCategory)
 
         Dim lblCondition As New Label With {
-            .Text = "Condition:",
-            .Location = New Point(50, 350),
-            .Size = New Size(100, 25),
-            .Font = New Font("Arial", 10),
-            .Visible = False
+            .Text = "Condition",
+            .Location = New Point(340, 270),
+            .Size = New Size(120, 25),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        Me.Controls.Add(lblCondition)
-
+        panel.Controls.Add(lblCondition)
 
         cmbCondition = New ComboBox With {
-            .Location = New Point(160, 350),
-            .Size = New Size(150, 25),
+            .Location = New Point(420, 266),
+            .Size = New Size(120, 25),
             .DropDownStyle = ComboBoxStyle.DropDownList,
-            .Font = New Font("Arial", 10),
-            .Visible = False
+            .Font = New Font("Segoe UI", 10.0F)
         }
         LoadConditions()
-        Me.Controls.Add(cmbCondition)
+        panel.Controls.Add(cmbCondition)
 
-        ' Submit Button (hidden initially)
-        Dim btnSubmit As New Button With {
-            .Text = "Add Part",
-            .Location = New Point(160, 400),
-            .Size = New Size(120, 35),
-            .BackColor = Color.FromArgb(34, 197, 94),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat,
-            .Visible = False
-        }
+        Dim btnSubmit As Button = ModernTheme.MakePrimaryButton("Add part")
+        btnSubmit.Location = New Point(150, 330)
+        btnSubmit.Width = 160
         AddHandler btnSubmit.Click, AddressOf btnSubmit_Click
-        Me.Controls.Add(btnSubmit)
+        panel.Controls.Add(btnSubmit)
 
-        Dim btnCancel As New Button With {
-            .Text = "Cancel",
-            .Location = New Point(290, 400),
-            .Size = New Size(120, 35),
-            .BackColor = Color.FromArgb(239, 68, 68),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(330, 330)
+        btnCancel.Width = 130
+        btnCancel.BackColor = ModernTheme.SurfaceAlt
+        btnCancel.ForeColor = ModernTheme.Danger
         AddHandler btnCancel.Click, AddressOf btnCancel_Click
-        Me.Controls.Add(btnCancel)
+        panel.Controls.Add(btnCancel)
     End Sub
-
 
     Private Sub LoadCategories()
         Try
-
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-
                 Dim sql As String = "SELECT CategoryID, CategoryName FROM mn.Category ORDER BY CategoryName"
                 Using cmd As New SqlCommand(sql, conn)
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         cmbCategory.Items.Clear()
                         While reader.Read()
-                            cmbCategory.Items.Add(New CategoryItem With {
-                                .ID = reader.GetInt32(0),
-                                .Name = reader.GetString(1)
-                            })
+                            cmbCategory.Items.Add(New CategoryItem With {.ID = reader.GetInt32(0), .Name = reader.GetString(1)})
                         End While
                     End Using
                 End Using
-
                 conn.Close()
             End Using
-
-            If cmbCategory.Items.Count > 0 Then
-                cmbCategory.SelectedIndex = 0
-            End If
-
+            If cmbCategory.Items.Count > 0 Then cmbCategory.SelectedIndex = 0
         Catch ex As Exception
-            MessageBox.Show("Error loading categories: " & ex.Message, "Database Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error loading categories: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-
     Private Sub LoadConditions()
         Try
-
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-
                 Dim sql As String = "SELECT ConditionID, ConditionName FROM mn.Condition ORDER BY ConditionName"
                 Using cmd As New SqlCommand(sql, conn)
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         cmbCondition.Items.Clear()
                         While reader.Read()
-                            cmbCondition.Items.Add(New ConditionItem With {
-                                .ID = reader.GetInt32(0),
-                                .Name = reader.GetString(1)
-                            })
+                            cmbCondition.Items.Add(New ConditionItem With {.ID = reader.GetInt32(0), .Name = reader.GetString(1)})
                         End While
                     End Using
                 End Using
-
                 conn.Close()
             End Using
-
-            If cmbCondition.Items.Count > 0 Then
-                cmbCondition.SelectedIndex = 0
-            End If
-
+            If cmbCondition.Items.Count > 0 Then cmbCondition.SelectedIndex = 0
         Catch ex As Exception
-            MessageBox.Show("Error loading conditions: " & ex.Message, "Database Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error loading conditions: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-
 
     Private Class CategoryItem
         Public Property ID As Integer
         Public Property Name As String
-
         Public Overrides Function ToString() As String
             Return Name
         End Function
@@ -549,114 +437,53 @@ Public Class Add_SparePart
     Private Class ConditionItem
         Public Property ID As Integer
         Public Property Name As String
-
         Public Overrides Function ToString() As String
             Return Name
         End Function
     End Class
 
-
     Private Sub btnCheckPart_Click(sender As Object, e As EventArgs)
         Dim partNumber As String = txtPartNumber.Text.Trim()
-
         If String.IsNullOrEmpty(partNumber) Then
-            MessageBox.Show("Please enter a part number", "Input Required",
-                          MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            MessageBox.Show("Please enter a part number", "Input Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
         Try
-
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-
-
                 Dim sql As String = "SELECT PartNumber, Description, CategoryID FROM mn.SpareParts WHERE PartNumber = @partNumber"
-
                 Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@partNumber", partNumber)
-
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         If reader.Read() Then
-                            ' Part exists - pre-fill data
-                            Dim description As String = ""
-                            If Not reader.IsDBNull(1) Then
-                                description = reader.GetString(1)
-                            End If
+                            Dim description As String = If(reader.IsDBNull(1), "", reader.GetString(1))
                             Dim categoryID As Integer = If(Not reader.IsDBNull(2), reader.GetInt32(2), 1)
-
-
-                            ShowPartFields()
-
-
                             txtDescription.Text = description
-
-
                             For Each item As CategoryItem In cmbCategory.Items
                                 If item.ID = categoryID Then
                                     cmbCategory.SelectedItem = item
                                     Exit For
                                 End If
                             Next
-
-                            MessageBox.Show($"Part '{partNumber}' exists. Updating stock.",
-                                          "Part Found", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                            MessageBox.Show("Part '" & partNumber & "' exists. Updating stock.", "Part Found", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         Else
-
-                            ShowPartFields()
                             txtDescription.Text = ""
-                            cmbCategory.SelectedIndex = 0
-                            cmbCondition.SelectedIndex = 0
-
-                            MessageBox.Show($"New part '{partNumber}'. Please enter details.",
-                                          "New Part", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                            If cmbCategory.Items.Count > 0 Then cmbCategory.SelectedIndex = 0
+                            If cmbCondition.Items.Count > 0 Then cmbCondition.SelectedIndex = 0
+                            MessageBox.Show("New part '" & partNumber & "'. Please enter details.", "New Part", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         End If
                     End Using
                 End Using
-
                 conn.Close()
             End Using
-
         Catch ex As Exception
-            MessageBox.Show("Error checking part: " & ex.Message, "Database Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error checking part: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-
-    Private Sub ShowPartFields()
-
-        For Each ctrl As Control In Me.Controls
-            If TypeOf ctrl Is Label AndAlso (ctrl.Text.Contains("Description") OrElse
-                                           ctrl.Text.Contains("Quantity") OrElse
-                                           ctrl.Text.Contains("Unit Price") OrElse
-                                           ctrl.Text.Contains("Category") OrElse
-                                           ctrl.Text.Contains("Condition")) Then
-                ctrl.Visible = True
-            End If
-        Next
-
-
-        txtDescription.Visible = True
-        txtQuantity.Visible = True
-        txtUnitPrice.Visible = True
-        cmbCategory.Visible = True
-        cmbCondition.Visible = True
-
-
-        For Each ctrl As Control In Me.Controls
-            If TypeOf ctrl Is Button AndAlso ctrl.Text = "Add Part" Then
-                ctrl.Visible = True
-                Exit For
-            End If
-        Next
-    End Sub
-
     Private Sub btnSubmit_Click(sender As Object, e As EventArgs)
-
-        If Not ValidatePartInputs() Then
-            Return
-        End If
+        If Not ValidatePartInputs() Then Return
 
         Dim partNumber As String = txtPartNumber.Text.Trim()
         Dim description As String = txtDescription.Text.Trim()
@@ -666,25 +493,17 @@ Public Class Add_SparePart
         Dim conditionID As Integer = DirectCast(cmbCondition.SelectedItem, ConditionItem).ID
 
         Try
-            ' Use a fresh connection
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-
-
                 Dim transaction As SqlTransaction = conn.BeginTransaction()
-
                 Try
-
                     Dim checkSql As String = "SELECT PartID, Quantity FROM mn.SpareParts WHERE PartNumber = @partNumber"
                     Dim partID As Integer = 0
                     Dim existingQty As Integer = 0
-
                     Using cmd As New SqlCommand(checkSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@partNumber", partNumber)
-
                         Using reader As SqlDataReader = cmd.ExecuteReader()
                             If reader.Read() Then
-                                ' Part exists - UPDATE
                                 partID = reader.GetInt32(0)
                                 existingQty = reader.GetInt32(1)
                             End If
@@ -692,13 +511,8 @@ Public Class Add_SparePart
                     End Using
 
                     If partID > 0 Then
-
                         Dim newQty As Integer = existingQty + quantity
-
-                        Dim updateSql As String = "UPDATE mn.SpareParts SET Quantity = @qty, UnitPrice = @price, " &
-                                                 "Description = @desc, CategoryID = @catID, ConditionID = @condID " &
-                                                 "WHERE PartNumber = @partNumber"
-
+                        Dim updateSql As String = "UPDATE mn.SpareParts SET Quantity = @qty, UnitPrice = @price, Description = @desc, CategoryID = @catID, ConditionID = @condID WHERE PartNumber = @partNumber"
                         Using cmd As New SqlCommand(updateSql, conn, transaction)
                             cmd.Parameters.AddWithValue("@qty", newQty)
                             cmd.Parameters.AddWithValue("@price", unitPrice)
@@ -709,12 +523,7 @@ Public Class Add_SparePart
                             cmd.ExecuteNonQuery()
                         End Using
                     Else
-                        ' INSERT new part
-                        Dim insertSql As String = "INSERT INTO mn.SpareParts " &
-                                                 "(PartNumber, Description, CategoryID, ConditionID, SupplierID, " &
-                                                 "Quantity, UnitPrice, CreatedAt) " &
-                                                 "VALUES (@partNum, @desc, @catID, @condID, @supID, @qty, @price, GETDATE())"
-
+                        Dim insertSql As String = "INSERT INTO mn.SpareParts (PartNumber, Description, CategoryID, ConditionID, SupplierID, Quantity, UnitPrice, CreatedAt) VALUES (@partNum, @desc, @catID, @condID, @supID, @qty, @price, GETDATE())"
                         Using cmd As New SqlCommand(insertSql, conn, transaction)
                             cmd.Parameters.AddWithValue("@partNum", partNumber)
                             cmd.Parameters.AddWithValue("@desc", description)
@@ -727,11 +536,7 @@ Public Class Add_SparePart
                         End Using
                     End If
 
-                    ' Insert into PurchaseBatch
-                    Dim batchSql As String = "INSERT INTO mn.PurchaseBatch " &
-                                            "(PartNumber, SupplierID, PurchaseDate, QuantityPurchased, QuantityRemaining, UnitCost) " &
-                                            "VALUES (@partNum, @supID, GETDATE(), @qty, @qty, @cost)"
-
+                    Dim batchSql As String = "INSERT INTO mn.PurchaseBatch (PartNumber, SupplierID, PurchaseDate, QuantityPurchased, QuantityRemaining, UnitCost) VALUES (@partNum, @supID, GETDATE(), @qty, @qty, @cost)"
                     Using cmd As New SqlCommand(batchSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@partNum", partNumber)
                         cmd.Parameters.AddWithValue("@supID", currentSupplierID)
@@ -740,69 +545,49 @@ Public Class Add_SparePart
                         cmd.ExecuteNonQuery()
                     End Using
 
-                    ' Insert into StockCard (audit trail)
-                    Dim stockSql As String = "INSERT INTO mn.StockCard " &
-                                            "(PartNumber, MovementType, Quantity, MovementDate, ReferenceType, Remarks) " &
-                                            "VALUES (@partNum, 'IN', @qty, GETDATE(), 'Purchase', 'Added from spare part form')"
-
+                    Dim stockSql As String = "INSERT INTO mn.StockCard (PartNumber, MovementType, Quantity, MovementDate, ReferenceType, Remarks) VALUES (@partNum, 'IN', @qty, GETDATE(), 'Purchase', 'Added from spare part form')"
                     Using cmd As New SqlCommand(stockSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@partNum", partNumber)
                         cmd.Parameters.AddWithValue("@qty", quantity)
                         cmd.ExecuteNonQuery()
                     End Using
 
-
                     transaction.Commit()
-
-
                     ShowSuccess(partNumber, quantity, unitPrice)
-
                 Catch ex As Exception
-
                     transaction.Rollback()
                     Throw ex
                 End Try
-
                 conn.Close()
             End Using
-
         Catch ex As Exception
-            MessageBox.Show("Error saving part: " & ex.Message, "Database Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error saving part: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-
     Private Function ValidatePartInputs() As Boolean
-
         If String.IsNullOrEmpty(txtPartNumber.Text.Trim()) Then
-            MessageBox.Show("Part number is required", "Validation Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Part number is required", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             txtPartNumber.Focus()
             Return False
         End If
 
-
         If String.IsNullOrEmpty(txtDescription.Text.Trim()) Then
-            MessageBox.Show("Description is required", "Validation Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Description is required", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             txtDescription.Focus()
             Return False
         End If
 
-
         Dim qty As Integer
         If Not Integer.TryParse(txtQuantity.Text, qty) OrElse qty <= 0 Then
-            MessageBox.Show("Quantity must be a positive whole number", "Validation Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Quantity must be a positive whole number", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             txtQuantity.Focus()
             Return False
         End If
 
         Dim price As Decimal
         If Not Decimal.TryParse(txtUnitPrice.Text, price) OrElse price < 0 Then
-            MessageBox.Show("Unit price must be a valid positive number", "Validation Error",
-                          MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Unit price must be a valid positive number", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             txtUnitPrice.Focus()
             Return False
         End If
@@ -810,60 +595,50 @@ Public Class Add_SparePart
         Return True
     End Function
 
-
     Private Sub ShowSuccess(partNumber As String, quantity As Integer, unitPrice As Decimal)
         ClearFormExceptTitle()
 
+        Dim panel As New Panel With {
+            .Location = New Point(30, 80),
+            .Size = New Size(640, 260),
+            .BackColor = Color.White,
+            .Padding = New Padding(20)
+        }
+        Me.Controls.Add(panel)
 
         Dim lblSuccess As New Label With {
-            .Text = $"✅ Part '{partNumber}' added successfully!",
-            .Font = New Font("Arial", 12, FontStyle.Bold),
-            .ForeColor = Color.DarkGreen,
-            .Location = New Point(100, 100),
-            .Size = New Size(350, 30)
+            .Text = "Part '" & partNumber & "' added successfully!",
+            .Font = New Font("Segoe UI", 18, FontStyle.Bold),
+            .ForeColor = ModernTheme.Success,
+            .Location = New Point(20, 20),
+            .AutoSize = True
         }
-        Me.Controls.Add(lblSuccess)
-
+        panel.Controls.Add(lblSuccess)
 
         Dim lblDetails As New Label With {
-            .Text = $"Quantity: {quantity}" & vbCrLf &
-                   $"Unit Price: ${unitPrice:F2}" & vbCrLf &
-                   $"Total: ${quantity * unitPrice:F2}" & vbCrLf &
-                   $"Supplier: {currentSupplierName}",
-            .Location = New Point(100, 150),
-            .Size = New Size(300, 120),
-            .Font = New Font("Arial", 10)
+            .Text = "Quantity: " & quantity & vbCrLf & "Unit price: " & unitPrice.ToString("C2") & vbCrLf & "Supplier: " & currentSupplierName,
+            .Location = New Point(20, 70),
+            .Size = New Size(360, 100),
+            .Font = New Font("Segoe UI", 11.0F),
+            .ForeColor = ModernTheme.PrimaryText
         }
-        Me.Controls.Add(lblDetails)
+        panel.Controls.Add(lblDetails)
 
-        Dim btnAddAnother As New Button With {
-            .Text = "Add Another Part",
-            .Location = New Point(100, 300),
-            .Size = New Size(150, 35),
-            .BackColor = Color.FromArgb(59, 130, 246),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnAddAnother As Button = ModernTheme.MakePrimaryButton("Add another")
+        btnAddAnother.Location = New Point(20, 190)
+        btnAddAnother.Width = 170
         AddHandler btnAddAnother.Click, AddressOf btnAddAnother_Click
-        Me.Controls.Add(btnAddAnother)
+        panel.Controls.Add(btnAddAnother)
 
-        ' Done button
-        Dim btnDone As New Button With {
-            .Text = "Done",
-            .Location = New Point(270, 300),
-            .Size = New Size(100, 35),
-            .BackColor = Color.FromArgb(34, 197, 94),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnDone As Button = ModernTheme.MakeSecondaryButton("Done")
+        btnDone.Location = New Point(210, 190)
+        btnDone.Width = 120
+        btnDone.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnDone.Click, AddressOf btnDone_Click
-        Me.Controls.Add(btnDone)
+        panel.Controls.Add(btnDone)
     End Sub
 
     Private Sub btnAddAnother_Click(sender As Object, e As EventArgs)
-        ' Reset to part entry with same supplier
         ShowPartEntrySection()
     End Sub
 

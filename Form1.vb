@@ -1,99 +1,205 @@
-﻿Imports System.Data.SqlClient
+Imports System.Data.SqlClient
 Imports System.Drawing
+Imports System.Windows.Forms
 
 Public Class Dashboard
-    ' Properties for user context (kept in code logic but removed from UI display)
     Public Property UserID As Integer = 0
     Public Property Username As String = ""
 
-    ' UI Controls
     Private pnlHeader As Panel
     Private pnlQuickActions As Panel
     Private lblTitle As Label
 
     Public Sub New()
-        ' Form Setup
+        ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "MIOS Inventory Management"
-        Me.Size = New Size(960, 600)
+        Me.Size = New Size(1180, 820)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.BackColor = Color.FromArgb(244, 246, 248)
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.FormBorderStyle = FormBorderStyle.None
         Me.MaximizeBox = False
+        Me.MinimizeBox = False
+        Me.ControlBox = False
 
         InitializeDashboard()
     End Sub
 
     Private Sub InitializeDashboard()
-        ' 1. Header Section (Only Title)
         pnlHeader = New Panel With {
             .Dock = DockStyle.Top,
-            .Height = 100,
-            .BackColor = Color.FromArgb(21, 101, 192)
+            .Height = 140,
+            .BackColor = Color.FromArgb(255, 255, 255)
         }
 
         lblTitle = New Label With {
-            .Text = "MIOS INVENTORY MANAGEMENT SYSTEM",
-            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
-            .ForeColor = Color.White,
-            .AutoSize = False,
-            .Size = New Size(960, 100),
-            .TextAlign = ContentAlignment.MiddleCenter
+            .Text = "Inventory Management",
+            .Font = New Font("Segoe UI", 28, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .AutoSize = True,
+            .Location = New Point(28, 48)
         }
         pnlHeader.Controls.Add(lblTitle)
+
+        Dim subtitle As New Label With {
+            .Text = "Operations dashboard",
+            .ForeColor = ModernTheme.MutedText,
+            .Font = New Font("Segoe UI", 11.0F),
+            .AutoSize = True,
+            .Location = New Point(30, 94)
+        }
+        pnlHeader.Controls.Add(subtitle)
+
+        Dim userChip As New Panel With {
+            .Size = New Size(168, 42),
+            .Location = New Point(Me.Width - 208, 48),
+            .BackColor = ModernTheme.SurfaceAlt,
+            .BorderStyle = BorderStyle.None
+        }
+        Dim userText As New Label With {
+            .Text = If(String.IsNullOrEmpty(Username), "Admin User", Username),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
+            .AutoSize = True,
+            .Location = New Point(18, 11)
+        }
+        userChip.Controls.Add(userText)
+        pnlHeader.Controls.Add(userChip)
         Me.Controls.Add(pnlHeader)
 
-        ' 2. Actions Section (Only Buttons)
         pnlQuickActions = New Panel With {
-            .Location = New Point(20, 120),
-            .Size = New Size(900, 420),
+            .Location = New Point(30, 170),
+            .Size = New Size(1100, 600),
             .BackColor = Color.Transparent
         }
 
-        ' Row 1
-        CreateMenuButton("Add Spare Part", 30, 20, AddressOf btnAddPart_Click)
-        CreateMenuButton("Issue Spare Part", 310, 20, AddressOf btnIssuePart_Click)
-        CreateMenuButton("View Stock Card", 590, 20, AddressOf btnStockCard_Click)
+        Dim hero As New Panel With {
+            .Location = New Point(0, 0),
+            .Size = New Size(1040, 170),
+            .BackColor = Color.FromArgb(28, 39, 44)
+        }
+        Dim heroText As New Label With {
+            .Text = "Your inventory, finally in sync.",
+            .ForeColor = Color.White,
+            .Font = New Font("Segoe UI", 26, FontStyle.Bold),
+            .Location = New Point(26, 28),
+            .AutoSize = True
+        }
+        hero.Controls.Add(heroText)
+        Dim heroSub As New Label With {
+            .Text = "Track stock movement, purchasing, customers, and suppliers from one dashboard.",
+            .ForeColor = Color.FromArgb(210, 210, 210),
+            .Font = New Font("Segoe UI", 11.0F),
+            .Location = New Point(28, 80),
+            .Size = New Size(500, 50)
+        }
+        hero.Controls.Add(heroSub)
+        pnlQuickActions.Controls.Add(hero)
 
-        ' Row 2
-        CreateMenuButton("Inventory List", 30, 120, AddressOf btnInventory_Click)
-        CreateMenuButton("Purchase Batches", 310, 120, AddressOf btnPurchaseBatch_Click)
-        CreateMenuButton("Sold Items", 590, 120, AddressOf btnSoldItem_Click)
+        Dim actionPanel As New FlowLayoutPanel With {
+            .Location = New Point(0, 190),
+            .Size = New Size(1040, 100),
+            .FlowDirection = FlowDirection.LeftToRight,
+            .WrapContents = False,
+            .BackColor = Color.Transparent
+        }
 
-        ' Row 3
-        CreateMenuButton("Manage Suppliers", 30, 220, AddressOf btnSupplier_Click)
-        CreateMenuButton("Manage Customers", 310, 220, AddressOf btnCustomer_Click)
+        Dim buttons As New List(Of Button) From {
+            CreateMenuButton("Add Spare Part", AddressOf btnAddPart_Click),
+            CreateMenuButton("Issue Spare Part", AddressOf btnIssuePart_Click),
+            CreateMenuButton("Inventory List", AddressOf btnInventory_Click),
+            CreateMenuButton("Purchase Batches", AddressOf btnPurchaseBatch_Click),
+            CreateMenuButton("Sold Items", AddressOf btnSoldItem_Click),
+            CreateMenuButton("Suppliers", AddressOf btnSupplier_Click),
+            CreateMenuButton("Customers", AddressOf btnCustomer_Click)
+        }
 
-        ' Exit Button
-        Dim btnExitUI = CreateMenuButton("Exit System", 590, 220, AddressOf btnExit_Click)
-        btnExitUI.BackColor = Color.White
-        btnExitUI.ForeColor = Color.Crimson
-        btnExitUI.FlatAppearance.BorderColor = Color.Crimson
+        For Each btn As Button In buttons
+            btn.Width = 160
+            btn.Height = 46
+            btn.Margin = New Padding(8)
+            actionPanel.Controls.Add(btn)
+        Next
 
+        pnlQuickActions.Controls.Add(actionPanel)
+
+        Dim statGrid As New TableLayoutPanel With {
+            .Location = New Point(0, 298),
+            .Size = New Size(1040, 260),
+            .ColumnCount = 2,
+            .RowCount = 2,
+            .BackColor = Color.Transparent,
+            .Padding = New Padding(0, 14, 0, 0)
+        }
+        statGrid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0!))
+        statGrid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0!))
+        statGrid.RowStyles.Add(New RowStyle(SizeType.Percent, 50.0!))
+        statGrid.RowStyles.Add(New RowStyle(SizeType.Percent, 50.0!))
+
+        statGrid.Controls.Add(CreateStatCard("Stock on hand", "1,284", "↑ 8.4% vs last month"), 0, 0)
+        statGrid.Controls.Add(CreateStatCard("Pending orders", "64", "5 need review"), 1, 0)
+        statGrid.Controls.Add(CreateStatCard("Low inventory", "12 items", "2 critical"), 0, 1)
+        statGrid.Controls.Add(CreateStatCard("Sales today", "₦ 84,500", "Strong performance"), 1, 1)
+
+        pnlQuickActions.Controls.Add(statGrid)
         Me.Controls.Add(pnlQuickActions)
+
+        Dim btnExitUI As Button = ModernTheme.MakeSecondaryButton("Exit System")
+        btnExitUI.Location = New Point(930, 560)
+        btnExitUI.Width = 100
+        btnExitUI.Height = 38
+        btnExitUI.ForeColor = ModernTheme.Danger
+        AddHandler btnExitUI.Click, AddressOf btnExit_Click
+        pnlQuickActions.Controls.Add(btnExitUI)
     End Sub
 
-    Private Function CreateMenuButton(text As String, x As Integer, y As Integer, handler As EventHandler) As Button
-        Dim btn As New Button With {
-            .Text = text,
-            .Location = New Point(x, y),
-            .Size = New Size(260, 80),
-            .FlatStyle = FlatStyle.Flat,
-            .Font = New Font("Segoe UI", 11, FontStyle.Bold),
-            .BackColor = Color.White,
-            .ForeColor = Color.FromArgb(33, 33, 33),
-            .Cursor = Cursors.Hand
-        }
+    Private Function CreateMenuButton(text As String, handler As EventHandler) As Button
+        Dim btn As Button = ModernTheme.MakePrimaryButton(text)
+        btn.Width = 180
+        btn.Height = 54
+        btn.BackColor = Color.White
+        btn.ForeColor = ModernTheme.PrimaryText
+        btn.FlatAppearance.BorderColor = ModernTheme.Border
         btn.FlatAppearance.BorderSize = 1
-        btn.FlatAppearance.BorderColor = Color.FromArgb(200, 200, 200)
-
+        btn.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
         AddHandler btn.Click, handler
-        pnlQuickActions.Controls.Add(btn)
         Return btn
     End Function
 
-    ' ============================
-    ' EVENT HANDLERS
-    ' ============================
+    Private Function CreateStatCard(title As String, value As String, note As String) As Panel
+        Dim card As New Panel With {
+            .BackColor = Color.White,
+            .Padding = New Padding(16),
+            .Height = 110,
+            .Margin = New Padding(8)
+        }
+
+        Dim lblTitle As New Label With {
+            .Text = title,
+            .ForeColor = ModernTheme.MutedText,
+            .Font = New Font("Segoe UI", 10.0F),
+            .Location = New Point(18, 18),
+            .AutoSize = True
+        }
+        card.Controls.Add(lblTitle)
+
+        Dim lblValue As New Label With {
+            .Text = value,
+            .ForeColor = ModernTheme.PrimaryText,
+            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
+            .Location = New Point(18, 42),
+            .AutoSize = True
+        }
+        card.Controls.Add(lblValue)
+
+        Dim lblNote As New Label With {
+            .Text = note,
+            .ForeColor = ModernTheme.Success,
+            .Font = New Font("Segoe UI", 9.0F),
+            .Location = New Point(18, 82),
+            .AutoSize = True
+        }
+        card.Controls.Add(lblNote)
+        Return card
+    End Function
 
     Private Sub btnAddPart_Click(sender As Object, e As EventArgs)
         Dim frm As New Add_SparePart() : frm.ShowDialog()

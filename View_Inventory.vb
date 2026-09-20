@@ -1,9 +1,10 @@
-﻿Imports System.Data
+Imports System.Data
 Imports System.Data.SqlClient
 Imports System.Linq
+Imports System.Drawing
+Imports System.Windows.Forms
 
 Public Class View_Inventory
-
     Public Structure InventoryItem
         Public PartNumber As String
         Public Description As String
@@ -14,11 +15,9 @@ Public Class View_Inventory
 
     Private inventoryArray() As InventoryItem
     Private filteredArray() As InventoryItem
-
     Private isEditing As Boolean = False
     Private editRowIndex As Integer = -1
 
-    ' UI Controls
     Private WithEvents dgvInventory As DataGridView
     Private txtSearch As TextBox
     Private btnSearch As Button
@@ -29,123 +28,125 @@ Public Class View_Inventory
     Private WithEvents btnCancel As Button
 
     Private Sub View_Inventory_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ModernTheme.ApplyWindowTheme(Me)
         SetupForm()
         LoadCategories()
         LoadInventory()
     End Sub
 
-
     Private Sub SetupForm()
         Me.Text = "Inventory Management"
-        Me.Size = New Size(1000, 650) ' Widened to accommodate a full table
+        Me.Size = New Size(1080, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.BackColor = Color.FromArgb(244, 246, 248)
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
 
-        ' 1. Title
         Dim lblTitle As New Label With {
-            .Text = "SPARE PARTS INVENTORY",
-            .Font = New Font("Segoe UI", 16, FontStyle.Bold),
-            .ForeColor = Color.FromArgb(21, 101, 192),
-            .Location = New Point(20, 15),
-            .Size = New Size(400, 35)
+            .Text = "Spare parts inventory",
+            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(22, 18),
+            .Size = New Size(400, 34)
         }
         Me.Controls.Add(lblTitle)
 
-        ' 2. Search Panel (Top)
         Dim pnlSearch As New Panel With {
-            .Location = New Point(20, 60),
-            .Size = New Size(940, 50),
-            .BackColor = Color.White,
-            .BorderStyle = BorderStyle.None
+            .Location = New Point(22, 64),
+            .Size = New Size(1010, 52),
+            .BackColor = Color.White
         }
-        txtSearch = New TextBox With {.Location = New Point(15, 12), .Size = New Size(350, 25), .Font = New Font("Segoe UI", 10)}
+        txtSearch = ModernTheme.MakeTextBox()
+        txtSearch.Location = New Point(12, 8)
+        txtSearch.Width = 380
         pnlSearch.Controls.Add(txtSearch)
 
-        btnSearch = New Button With {
-            .Text = "Search", .Location = New Point(380, 10), .Size = New Size(100, 30),
-            .BackColor = Color.FromArgb(59, 130, 246), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnSearch = ModernTheme.MakePrimaryButton("Search")
+        btnSearch.Location = New Point(406, 8)
+        btnSearch.Width = 120
         AddHandler btnSearch.Click, AddressOf btnSearch_Click
         pnlSearch.Controls.Add(btnSearch)
 
-        btnClear = New Button With {
-            .Text = "Clear All", .Location = New Point(490, 10), .Size = New Size(100, 30),
-            .BackColor = Color.FromArgb(108, 117, 125), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnClear = ModernTheme.MakeSecondaryButton("Clear all")
+        btnClear.Location = New Point(536, 8)
+        btnClear.Width = 120
+        btnClear.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnClear.Click, AddressOf btnClear_Click
         pnlSearch.Controls.Add(btnClear)
         Me.Controls.Add(pnlSearch)
 
-        ' 3. Category Filter (Side)
         Dim pnlCategory As New Panel With {
-            .Location = New Point(20, 125), .Size = New Size(200, 400), .BackColor = Color.White
+            .Location = New Point(22, 130),
+            .Size = New Size(210, 420),
+            .BackColor = Color.White
         }
-        Dim lblCategory As New Label With {.Text = "CATEGORIES", .Location = New Point(10, 15), .Font = New Font("Segoe UI", 9, FontStyle.Bold), .ForeColor = Color.Gray}
+        Dim lblCategory As New Label With {
+            .Text = "Categories",
+            .Location = New Point(12, 16),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
         pnlCategory.Controls.Add(lblCategory)
 
         lstCategories = New ListBox With {
-            .Location = New Point(10, 45), .Size = New Size(180, 300), .BorderStyle = BorderStyle.None, .Font = New Font("Segoe UI", 10)
+            .Location = New Point(12, 42),
+            .Size = New Size(180, 300),
+            .BorderStyle = BorderStyle.None,
+            .Font = New Font("Segoe UI", 10)
         }
         pnlCategory.Controls.Add(lstCategories)
 
-        btnFilterCategory = New Button With {
-            .Text = "Apply Category", .Location = New Point(10, 355), .Size = New Size(180, 35),
-            .BackColor = Color.FromArgb(34, 197, 94), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnFilterCategory = ModernTheme.MakePrimaryButton("Apply category")
+        btnFilterCategory.Location = New Point(12, 360)
+        btnFilterCategory.Width = 180
         AddHandler btnFilterCategory.Click, AddressOf btnFilterCategory_Click
         pnlCategory.Controls.Add(btnFilterCategory)
         Me.Controls.Add(pnlCategory)
 
-
         dgvInventory = New DataGridView With {
-            .Location = New Point(235, 125),
-            .Size = New Size(725, 400),
+            .Location = New Point(252, 130),
+            .Size = New Size(780, 420),
             .BackgroundColor = Color.White,
             .BorderStyle = BorderStyle.None,
             .AllowUserToAddRows = False,
             .ReadOnly = True,
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .RowHeadersVisible = False,
-            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill, ' <--- THIS MAKES IT FIT FULLY
-            .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = Color.FromArgb(245, 247, 250)},
+            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = ModernTheme.SurfaceAlt},
             .Font = New Font("Segoe UI", 10)
         }
-
-
+        ModernTheme.StyleGrid(dgvInventory)
         dgvInventory.Columns.Add("Description", "Description")
         dgvInventory.Columns.Add("PartNumber", "Part Number")
         dgvInventory.Columns.Add("Category", "Category")
         dgvInventory.Columns.Add("Quantity", "Stock")
         dgvInventory.Columns.Add("UnitPrice", "Price")
-
-
-        dgvInventory.Columns("Description").FillWeight = 150 ' Takes more space
+        dgvInventory.Columns("Description").FillWeight = 150
         dgvInventory.Columns("UnitPrice").DefaultCellStyle.Format = "C2"
-
         AddHandler dgvInventory.CellDoubleClick, AddressOf dgvInventory_CellDoubleClick
         Me.Controls.Add(dgvInventory)
 
-
-        btnSave = New Button With {
-            .Text = "Save Changes", .Location = New Point(735, 540), .Size = New Size(110, 35),
-            .BackColor = Color.FromArgb(34, 197, 94), .ForeColor = Color.White, .Visible = False, .FlatStyle = FlatStyle.Flat
-        }
+        btnSave = ModernTheme.MakePrimaryButton("Save changes")
+        btnSave.Location = New Point(762, 570)
+        btnSave.Width = 150
+        btnSave.Visible = False
         Me.Controls.Add(btnSave)
 
-        btnCancel = New Button With {
-            .Text = "Cancel", .Location = New Point(850, 540), .Size = New Size(110, 35),
-            .BackColor = Color.FromArgb(239, 68, 68), .ForeColor = Color.White, .Visible = False, .FlatStyle = FlatStyle.Flat
-        }
+        btnCancel = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(920, 570)
+        btnCancel.Width = 110
+        btnCancel.Visible = False
+        btnCancel.BackColor = ModernTheme.SurfaceAlt
+        btnCancel.ForeColor = ModernTheme.Danger
         Me.Controls.Add(btnCancel)
 
-        Dim btnClose As New Button With {
-            .Text = "Back to Dashboard", .Location = New Point(20, 540), .Size = New Size(200, 35),
-            .BackColor = Color.White, .ForeColor = Color.FromArgb(33, 33, 33), .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Back to dashboard")
+        btnClose.Location = New Point(22, 570)
+        btnClose.Width = 180
         AddHandler btnClose.Click, Sub() Me.Close()
         Me.Controls.Add(btnClose)
     End Sub
-
 
     Private Function GetInventoryFromDB() As InventoryItem()
         Dim itemsList As New List(Of InventoryItem)
@@ -185,7 +186,6 @@ Public Class View_Inventory
         Next
     End Sub
 
-
     Private Sub btnSearch_Click(sender As Object, e As EventArgs)
         Dim s = txtSearch.Text.Trim().ToLower()
         If String.IsNullOrEmpty(s) Then
@@ -216,7 +216,9 @@ Public Class View_Inventory
             Dim cmd As New SqlCommand("SELECT CategoryName FROM mn.Category", DBModule.Conn)
             Dim reader = cmd.ExecuteReader()
             lstCategories.Items.Clear()
-            While reader.Read() : lstCategories.Items.Add(reader(0).ToString()) : End While
+            While reader.Read()
+                lstCategories.Items.Add(reader(0).ToString())
+            End While
             DBModule.CloseConnection()
         Catch : End Try
     End Sub
@@ -230,7 +232,6 @@ Public Class View_Inventory
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
-        ' Logic to save row changes back to DB would go here
         dgvInventory.ReadOnly = True
         btnSave.Visible = False
         btnCancel.Visible = False

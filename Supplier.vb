@@ -1,14 +1,8 @@
-﻿Imports System.Data
-Imports System.Data.SqlClient
-Imports System.Linq
-Imports System.Collections.Generic
-Imports System.Text
 Imports System.Drawing
 Imports System.Windows.Forms
 
 Public Class Supplier
     Inherits Form
-
 
     Public Structure SupplierInfo
         Public SupplierID As Integer
@@ -24,15 +18,13 @@ Public Class Supplier
         Public TotalCost As Decimal
     End Structure
 
-
     Private suppliersArray() As SupplierInfo
     Private filteredArray() As SupplierInfo
     Private purchaseSummaryArray() As PurchaseSummary
-    Private viewMode As String = "LIST" ' LIST or SUMMARY
+    Private viewMode As String = "LIST"
     Private selectedSupplierID As Integer = -1
     Private selectedSupplierName As String = ""
 
-    ' UI Controls
     Private WithEvents dgvSuppliers As DataGridView
     Private WithEvents dgvPurchases As DataGridView
     Private WithEvents txtSearch As TextBox
@@ -45,56 +37,62 @@ Public Class Supplier
     Private lblSupplierTitle As Label
     Private lblSearchLabel As Label
 
-
     Public Sub New()
+        ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Supplier Management"
-        Me.Size = New Size(1100, 650)
+        Me.Size = New Size(1120, 680)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.BackColor = Color.FromArgb(248, 249, 250)
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
         InitializeSupplierForm()
     End Sub
 
-
     Private Sub InitializeSupplierForm()
-        ' Main Title
         lblTitle = New Label With {
-            .Text = "SUPPLIER INFORMATION",
-            .Font = New Font("Arial", 14, FontStyle.Bold),
-            .ForeColor = Color.Navy,
-            .Location = New Point(20, 20),
-            .Size = New Size(400, 30)
+            .Text = "Supplier information",
+            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(24, 18),
+            .Size = New Size(320, 34)
         }
         Me.Controls.Add(lblTitle)
 
-        ' Secondary Title (for records view)
         lblSupplierTitle = New Label With {
-            .Font = New Font("Arial", 12, FontStyle.Bold),
-            .ForeColor = Color.DarkGreen,
-            .Location = New Point(20, 60),
-            .Size = New Size(800, 25),
+            .Font = New Font("Segoe UI", 16, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(24, 62),
+            .Size = New Size(800, 26),
             .Visible = False
         }
         Me.Controls.Add(lblSupplierTitle)
 
         lblSearchLabel = New Label With {
-            .Text = "Search Supplier:",
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .Location = New Point(20, 100),
-            .Size = New Size(150, 25)
+            .Text = "Search supplier",
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText,
+            .Location = New Point(24, 104),
+            .Size = New Size(140, 24)
         }
         Me.Controls.Add(lblSearchLabel)
 
-        Dim pnlSearch As New Panel With {.Location = New Point(170, 95), .Size = New Size(900, 40)}
-        txtSearch = New TextBox With {.Location = New Point(10, 7), .Size = New Size(300, 25), .Font = New Font("Arial", 10)}
-        btnSearch = New Button With {.Text = "Search", .Location = New Point(320, 5), .Size = New Size(80, 30), .BackColor = Color.FromArgb(59, 130, 246), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat}
-        btnClear = New Button With {.Text = "Clear", .Location = New Point(410, 5), .Size = New Size(80, 30), .BackColor = Color.Gray, .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat}
+        Dim pnlSearch As New Panel With {.Location = New Point(170, 98), .Size = New Size(920, 42), .BackColor = Color.White}
+        txtSearch = ModernTheme.MakeTextBox()
+        txtSearch.Location = New Point(12, 8)
+        txtSearch.Width = 360
+        btnSearch = ModernTheme.MakePrimaryButton("Search")
+        btnSearch.Location = New Point(390, 6)
+        btnSearch.Width = 110
+        btnClear = ModernTheme.MakeSecondaryButton("Clear")
+        btnClear.Location = New Point(510, 6)
+        btnClear.Width = 110
+        btnClear.BackColor = ModernTheme.SurfaceAlt
         pnlSearch.Controls.AddRange({txtSearch, btnSearch, btnClear})
         Me.Controls.Add(pnlSearch)
 
-
         dgvSuppliers = New DataGridView With {
-            .Location = New Point(20, 150),
-            .Size = New Size(1050, 350),
+            .Location = New Point(24, 150),
+            .Size = New Size(1060, 390),
             .BackgroundColor = Color.White,
             .ReadOnly = True,
             .RowHeadersVisible = False,
@@ -102,12 +100,11 @@ Public Class Supplier
             .AllowUserToAddRows = False,
             .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
         }
+        ModernTheme.StyleGrid(dgvSuppliers)
         dgvSuppliers.Columns.Add("SupplierName", "Supplier Name")
         dgvSuppliers.Columns.Add("Phone", "Contact No")
         dgvSuppliers.Columns.Add("Address", "Office Address")
         dgvSuppliers.Columns.Add("Records", "Records")
-
-        ' Adjust column ratios (Total FillWeight = 100)
         dgvSuppliers.Columns("SupplierName").FillWeight = 30
         dgvSuppliers.Columns("Phone").FillWeight = 15
         dgvSuppliers.Columns("Address").FillWeight = 40
@@ -115,8 +112,8 @@ Public Class Supplier
         Me.Controls.Add(dgvSuppliers)
 
         dgvPurchases = New DataGridView With {
-            .Location = New Point(20, 150),
-            .Size = New Size(1050, 350),
+            .Location = New Point(24, 150),
+            .Size = New Size(1060, 390),
             .BackgroundColor = Color.White,
             .Visible = False,
             .ReadOnly = True,
@@ -124,36 +121,43 @@ Public Class Supplier
             .AllowUserToAddRows = False,
             .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
         }
+        ModernTheme.StyleGrid(dgvPurchases)
         Me.Controls.Add(dgvPurchases)
 
-
-        Dim pnlActions As New Panel With {.Location = New Point(20, 520), .Size = New Size(1050, 60)}
-        btnExport = New Button With {.Text = "Export to CSV", .Location = New Point(0, 10), .Size = New Size(130, 40), .BackColor = Color.FromArgb(40, 167, 69), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat}
-        btnViewRecords = New Button With {.Text = "View Records", .Location = New Point(140, 10), .Size = New Size(130, 40), .BackColor = Color.FromArgb(23, 162, 184), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Enabled = False}
-        btnBackToSuppliers = New Button With {.Text = "Back to List", .Location = New Point(280, 10), .Size = New Size(130, 40), .BackColor = Color.Gray, .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Visible = False}
-
-        Dim btnClose As New Button With {.Text = "Close", .Location = New Point(420, 10), .Size = New Size(100, 40), .BackColor = Color.IndianRed, .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat}
+        Dim pnlActions As New Panel With {.Location = New Point(24, 562), .Size = New Size(1060, 60), .BackColor = Color.Transparent}
+        btnExport = ModernTheme.MakePrimaryButton("Export to CSV")
+        btnExport.Location = New Point(0, 10)
+        btnExport.Width = 150
+        btnExport.BackColor = ModernTheme.Success
+        btnViewRecords = ModernTheme.MakePrimaryButton("View records")
+        btnViewRecords.Location = New Point(170, 10)
+        btnViewRecords.Width = 150
+        btnBackToSuppliers = ModernTheme.MakeSecondaryButton("Back to list")
+        btnBackToSuppliers.Location = New Point(340, 10)
+        btnBackToSuppliers.Width = 150
+        btnBackToSuppliers.Visible = False
+        Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Close")
+        btnClose.Location = New Point(500, 10)
+        btnClose.Width = 110
+        btnClose.ForeColor = ModernTheme.Danger
         AddHandler btnClose.Click, Sub() Me.Close()
 
         pnlActions.Controls.AddRange({btnExport, btnViewRecords, btnBackToSuppliers, btnClose})
         Me.Controls.Add(pnlActions)
     End Sub
 
-
     Private Sub Supplier_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         AddHandler btnSearch.Click, Sub() LoadSuppliers(txtSearch.Text.Trim())
         AddHandler btnClear.Click, Sub()
-                                       txtSearch.Clear()
-                                       LoadSuppliers("")
-                                   End Sub
+                                        txtSearch.Clear()
+                                        LoadSuppliers("")
+                                    End Sub
         AddHandler btnViewRecords.Click, AddressOf HandleViewRecords
         AddHandler btnBackToSuppliers.Click, Sub() ShowSupplierList()
         AddHandler btnExport.Click, AddressOf ExportToCSV
         AddHandler dgvSuppliers.CellClick, AddressOf HandleCellClick
-
         LoadSuppliers("")
     End Sub
-
 
     Private Sub LoadSuppliers(searchTerm As String)
         Dim list As New List(Of SupplierInfo)
@@ -163,7 +167,6 @@ Public Class Supplier
             If Not String.IsNullOrEmpty(searchTerm) Then
                 sql &= " WHERE SupplierName LIKE @s OR Phone LIKE @s"
             End If
-
             Using cmd As New SqlCommand(sql, DBModule.Conn)
                 cmd.Parameters.AddWithValue("@s", "%" & searchTerm & "%")
                 Using reader = cmd.ExecuteReader()
@@ -183,7 +186,7 @@ Public Class Supplier
 
             dgvSuppliers.Rows.Clear()
             For Each s In filteredArray
-                Dim rowIndex As Integer = dgvSuppliers.Rows.Add(s.SupplierName, s.Phone, s.Address, "View Records")
+                Dim rowIndex As Integer = dgvSuppliers.Rows.Add(s.SupplierName, s.Phone, s.Address, "View records")
                 dgvSuppliers.Rows(rowIndex).Tag = s.SupplierID
             Next
             btnViewRecords.Enabled = (dgvSuppliers.Rows.Count > 0)
@@ -194,16 +197,14 @@ Public Class Supplier
         End Try
     End Sub
 
-    ' Navigate back to the main list
     Private Sub ShowSupplierList()
         viewMode = "LIST"
         dgvSuppliers.Visible = True
         dgvPurchases.Visible = False
         lblSupplierTitle.Visible = False
         btnBackToSuppliers.Visible = False
-        lblTitle.Text = "SUPPLIER INFORMATION"
+        lblTitle.Text = "Supplier information"
     End Sub
-
 
     Private Sub HandleViewRecords()
         If dgvSuppliers.SelectedRows.Count > 0 Then
@@ -219,7 +220,6 @@ Public Class Supplier
         End If
     End Sub
 
-
     Private Sub LoadSupplierPurchases(id As Integer, name As String)
         selectedSupplierID = id
         selectedSupplierName = name
@@ -228,12 +228,7 @@ Public Class Supplier
         Dim list As New List(Of PurchaseSummary)
         Try
             DBModule.OpenConnection()
-            Dim sql As String = "SELECT CAST(PurchaseDate AS DATE) as PDate, " &
-                               "SUM(QuantityPurchased) as TotalQty, " &
-                               "SUM(QuantityPurchased * UnitCost) as TotalCost " &
-                               "FROM mn.PurchaseBatch WHERE SupplierID = @id " &
-                               "GROUP BY CAST(PurchaseDate AS DATE) ORDER BY PDate DESC"
-
+            Dim sql As String = "SELECT CAST(PurchaseDate AS DATE) as PDate, SUM(QuantityPurchased) as TotalQty, SUM(QuantityPurchased * UnitCost) as TotalCost FROM mn.PurchaseBatch WHERE SupplierID = @id GROUP BY CAST(PurchaseDate AS DATE) ORDER BY PDate DESC"
             Using cmd As New SqlCommand(sql, DBModule.Conn)
                 cmd.Parameters.AddWithValue("@id", id)
                 Using reader = cmd.ExecuteReader()
@@ -249,21 +244,18 @@ Public Class Supplier
 
             purchaseSummaryArray = list.ToArray()
 
-            ' Prepare Purchase Grid
             dgvPurchases.Columns.Clear()
             dgvPurchases.Columns.Add("Date", "Purchase Date")
             dgvPurchases.Columns.Add("Qty", "Items Received")
-            dgvPurchases.Columns.Add("Cost", "Total Value (ETB)")
-
+            dgvPurchases.Columns.Add("Cost", "Total Value")
             dgvPurchases.Rows.Clear()
             For Each p In purchaseSummaryArray
                 dgvPurchases.Rows.Add(p.PurchaseDate.ToString("yyyy-MM-dd"), p.TotalQuantityPurchased, p.TotalCost.ToString("N2"))
             Next
 
-            ' Update UI Visibility
             dgvSuppliers.Visible = False
             dgvPurchases.Visible = True
-            lblSupplierTitle.Text = "PURCHASE HISTORY: " & name.ToUpper()
+            lblSupplierTitle.Text = "Purchase history: " & name.ToUpper()
             lblSupplierTitle.Visible = True
             btnBackToSuppliers.Visible = True
         Catch ex As Exception
@@ -272,7 +264,6 @@ Public Class Supplier
             DBModule.CloseConnection()
         End Try
     End Sub
-
 
     Private Sub ExportToCSV()
         Try

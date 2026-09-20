@@ -1,13 +1,8 @@
-﻿Imports System.Data
-Imports System.Data.SqlClient
-Imports System.Linq
-Imports System.Collections.Generic
-Imports System.Text
 Imports System.Drawing
 Imports System.Windows.Forms
 
 Public Class Customer
-    Inherits Form ' Added inheritance
+    Inherits Form
 
     Public Structure CustomerInfo
         Public CustomerID As Integer
@@ -17,14 +12,10 @@ Public Class Customer
         Public Address As String
     End Structure
 
-
     Private customersArray() As CustomerInfo
     Private filteredArray() As CustomerInfo
-
-
     Private totalCustomers As Integer = 0
 
-    ' UI Controls
     Private WithEvents dgvCustomers As DataGridView
     Private txtSearch As TextBox
     Private btnSearch As Button
@@ -33,6 +24,7 @@ Public Class Customer
     Private lblTitle As Label
 
     Public Sub New()
+        ModernTheme.ApplyWindowTheme(Me)
         SetupForm()
     End Sub
 
@@ -40,99 +32,89 @@ Public Class Customer
         LoadCustomers("")
     End Sub
 
-
     Private Sub SetupForm()
         Me.Text = "Customer Management System"
-        Me.Size = New Size(1100, 600) ' Matches Supplier width
+        Me.Size = New Size(1120, 620)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.BackColor = Color.FromArgb(248, 249, 250)
-
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
 
         lblTitle = New Label With {
-            .Text = "CUSTOMER DATABASE",
-            .Font = New Font("Arial", 14, FontStyle.Bold),
-            .ForeColor = Color.Navy,
-            .Location = New Point(20, 20),
-            .Size = New Size(400, 30)
+            .Text = "Customer database",
+            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(24, 18),
+            .Size = New Size(300, 34)
         }
         Me.Controls.Add(lblTitle)
 
-
         Dim pnlSearch As New Panel With {
-            .Location = New Point(20, 60),
-            .Size = New Size(1045, 50),
-            .BackColor = Color.White,
-            .BorderStyle = BorderStyle.FixedSingle
+            .Location = New Point(24, 70),
+            .Size = New Size(1060, 58),
+            .BackColor = Color.White
         }
 
-        txtSearch = New TextBox With {.Location = New Point(10, 12), .Size = New Size(300, 25), .Font = New Font("Arial", 10)}
+        txtSearch = ModernTheme.MakeTextBox()
+        txtSearch.Location = New Point(12, 12)
+        txtSearch.Width = 360
         AddHandler txtSearch.KeyPress, AddressOf txtSearch_KeyPress
+        pnlSearch.Controls.Add(txtSearch)
 
-        btnSearch = New Button With {
-            .Text = "Search", .Location = New Point(320, 10), .Size = New Size(80, 30),
-            .BackColor = Color.FromArgb(59, 130, 246), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat
-        }
+        btnSearch = ModernTheme.MakePrimaryButton("Search")
+        btnSearch.Location = New Point(386, 10)
+        btnSearch.Width = 120
         AddHandler btnSearch.Click, AddressOf btnSearch_Click
+        pnlSearch.Controls.Add(btnSearch)
 
-        btnClear = New Button With {
-            .Text = "Clear", .Location = New Point(410, 10), .Size = New Size(80, 30),
-            .BackColor = Color.Gray, .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat
-        }
+        btnClear = ModernTheme.MakeSecondaryButton("Clear")
+        btnClear.Location = New Point(518, 10)
+        btnClear.Width = 110
+        btnClear.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnClear.Click, AddressOf btnClear_Click
+        pnlSearch.Controls.Add(btnClear)
 
-        pnlSearch.Controls.AddRange({txtSearch, btnSearch, btnClear})
         Me.Controls.Add(pnlSearch)
 
-
         dgvCustomers = New DataGridView With {
-            .Location = New Point(20, 120),
-            .Size = New Size(1045, 350),
+            .Location = New Point(24, 150),
+            .Size = New Size(1060, 360),
             .BackgroundColor = Color.White,
             .ReadOnly = True,
             .RowHeadersVisible = False,
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .AllowUserToAddRows = False,
-            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill ' CRITICAL for full fit
+            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
         }
-
-
+        ModernTheme.StyleGrid(dgvCustomers)
         dgvCustomers.Columns.Add("FullName", "Customer Name")
         dgvCustomers.Columns.Add("Phone", "Phone Number")
         dgvCustomers.Columns.Add("Email", "Email Address")
         dgvCustomers.Columns.Add("Address", "Home/Office Address")
-
-
-        dgvCustomers.Columns("FullName").FillWeight = 25
-        dgvCustomers.Columns("Phone").FillWeight = 15
-        dgvCustomers.Columns("Email").FillWeight = 20
-        dgvCustomers.Columns("Address").FillWeight = 40
-
         AddHandler dgvCustomers.CellFormatting, AddressOf dgvCustomers_CellFormatting
         Me.Controls.Add(dgvCustomers)
 
-
-        btnExport = New Button With {
-            .Text = "Export to CSV", .Location = New Point(20, 485), .Size = New Size(130, 40),
-            .BackColor = Color.FromArgb(40, 167, 69), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat
-        }
+        btnExport = ModernTheme.MakePrimaryButton("Export to CSV")
+        btnExport.Location = New Point(24, 530)
+        btnExport.Width = 160
+        btnExport.BackColor = ModernTheme.Success
         AddHandler btnExport.Click, AddressOf btnExport_Click
         Me.Controls.Add(btnExport)
 
-        Dim btnClose As New Button With {
-            .Text = "Close", .Location = New Point(160, 485), .Size = New Size(100, 40),
-            .BackColor = Color.IndianRed, .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Close")
+        btnClose.Location = New Point(200, 530)
+        btnClose.Width = 120
+        btnClose.BackColor = ModernTheme.SurfaceAlt
+        btnClose.ForeColor = ModernTheme.Danger
         AddHandler btnClose.Click, Sub() Me.Close()
         Me.Controls.Add(btnClose)
     End Sub
-
 
     Private Function GetCustomersFromDB(Optional ByVal searchTerm As String = "") As CustomerInfo()
         Dim customersList As New List(Of CustomerInfo)
         Try
             DBModule.OpenConnection()
             Dim query As String = "SELECT CustomerID, CustomerName, Phone, Email, Address FROM mn.Customer"
-
             If Not String.IsNullOrEmpty(searchTerm) Then
                 query &= " WHERE CustomerName LIKE @s OR Phone LIKE @s OR Email LIKE @s"
             End If
@@ -166,14 +148,11 @@ Public Class Customer
 
         dgvCustomers.Rows.Clear()
         If filteredArray.Length > 0 Then
-            ' Reset column visibility in case it was hidden by "No Records" state
             For Each col As DataGridViewColumn In dgvCustomers.Columns : col.Visible = True : Next
-
             For i As Integer = 0 To filteredArray.Length - 1
                 dgvCustomers.Rows.Add(filteredArray(i).FullName, filteredArray(i).Phone, filteredArray(i).Email, filteredArray(i).Address)
             Next
         Else
-
             dgvCustomers.Rows.Add("No customers found matching your search.")
             dgvCustomers.Columns(1).Visible = False
             dgvCustomers.Columns(2).Visible = False
@@ -182,10 +161,8 @@ Public Class Customer
         totalCustomers = filteredArray.Length
     End Sub
 
-
     Private Sub dgvCustomers_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs)
         If e.RowIndex >= 0 Then
-            ' Italicize and Color Red for "N/A" values
             If e.Value IsNot Nothing AndAlso e.Value.ToString() = "N/A" Then
                 e.CellStyle.ForeColor = Color.Red
                 e.CellStyle.Font = New Font(dgvCustomers.Font, FontStyle.Italic)
