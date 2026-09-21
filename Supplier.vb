@@ -1,5 +1,7 @@
 Imports System.Drawing
 Imports System.Windows.Forms
+Imports System.Data.SqlClient
+Imports System.Text
 
 Public Class Supplier
     Inherits Form
