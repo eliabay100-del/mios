@@ -13,7 +13,7 @@ Public Class Login
     Private WithEvents lblError As Label
 
     ' Database connection string
-    Private connectionString As String = "Server=DESKTOP-KGESGJQ\NATNAEL;Database=Inventory;Integrated Security=True;"
+    Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
 
     Public Property LoginSuccessful As Boolean = False
     Public Property Username As String = ""

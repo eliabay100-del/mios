@@ -7,7 +7,7 @@ Public Class ChangePasswordForm
     Private txtNewPassword As TextBox
     Private txtConfirmPassword As TextBox
     Private lblError As Label
-    Private connectionString As String = "Server=DESKTOP-KGESGJQ\NATNAEL;Database=Inventory;Integrated Security=True;"
+    Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
 
     Public Sub New()
         ModernTheme.ApplyWindowTheme(Me)
@@ -150,7 +150,7 @@ Public Class ChangePasswordForm
         Try
             Dim currentPasswordHash As String = HashPassword(txtCurrentPassword.Text)
             Dim newPasswordHash As String = HashPassword(txtNewPassword.Text)
-            Dim query As String = "UPDATE mn.Users SET PasswordHash = @newPassword WHERE Username = @username AND PasswordHash = @currentPassword"
+            Dim query As String = "UPDATE mn.UUser SET PasswordHash = @newPassword WHERE Username = @username AND PasswordHash = @currentPassword"
 
             Using connection As New SqlConnection(connectionString)
                 connection.Open()

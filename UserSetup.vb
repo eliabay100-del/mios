@@ -4,22 +4,31 @@ Imports System.Text
 Imports System.Windows.Forms
 
 Module UserSetup
-    Private connectionString As String = "Server=DESKTOP-KGESGJQ\NATNAEL;Database=Inventory;Integrated Security=True;"
+    Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
 
-    Sub CreateInitialUser()
-        Dim username As String = "nati"
-        Dim password As String = "admin123"
-        Dim hash As String = HashPassword(password)
-
+    Public Function HasUsers() As Boolean
         Using con As New SqlConnection(connectionString)
             con.Open()
-            Dim cmd As New SqlCommand("INSERT INTO mn.UUser (Username, PasswordHash) VALUES (@u, @p)", con)
-            cmd.Parameters.AddWithValue("@u", username)
-            cmd.Parameters.AddWithValue("@p", hash)
-            cmd.ExecuteNonQuery()
+            Using cmd As New SqlCommand("SELECT COUNT(*) FROM mn.UUser", con)
+                Return Convert.ToInt32(cmd.ExecuteScalar()) > 0
+            End Using
         End Using
+    End Function
 
-        MessageBox.Show("Initial user created: " & username)
+    Public Sub CreateUser(username As String, password As String)
+        Using con As New SqlConnection(connectionString)
+            con.Open()
+            Using cmd As New SqlCommand("INSERT INTO mn.UUser (Username, PasswordHash) VALUES (@u, @p)", con)
+                cmd.Parameters.AddWithValue("@u", username.Trim())
+                cmd.Parameters.AddWithValue("@p", HashPassword(password))
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Sub CreateInitialUser()
+        CreateUser("nati", "admin123")
+        MessageBox.Show("Initial user created: nati")
     End Sub
 
     Private Function HashPassword(password As String) As String

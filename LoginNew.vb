@@ -5,7 +5,7 @@ Imports System.Windows.Forms
 Imports System.Drawing
 
 Public Class LoginNew
-    Private connectionString As String = "Server=DESKTOP-KGESGJQ\NATNAEL;Database=Inventory;Integrated Security=True;"
+    Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
 
     ' Controls
     Private WithEvents txtUsername As New TextBox With {.Location = New Point(130, 70), .Size = New Size(200, 25)}
@@ -36,8 +36,27 @@ Public Class LoginNew
         ' Event handlers
         AddHandler btnLogin.Click, AddressOf btnLogin_Click
         AddHandler txtPassword.KeyPress, AddressOf txtPassword_KeyPress
+        AddHandler Me.Load, AddressOf LoginNew_Load
 
         txtUsername.Focus()
+    End Sub
+
+    Private Sub LoginNew_Load(sender As Object, e As EventArgs)
+        Try
+            If Not UserSetup.HasUsers() Then
+                Me.Hide()
+                Using setup As New FirstRunSetupForm()
+                    If setup.ShowDialog() <> DialogResult.OK Then
+                        Me.Close()
+                        Return
+                    End If
+                End Using
+                Me.Show()
+                txtUsername.Focus()
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Unable to check user setup: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub txtPassword_KeyPress(sender As Object, e As KeyPressEventArgs)

@@ -105,6 +105,9 @@
       <DependentUpon>Form1.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FirstRunSetupForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Issue_SparePart.Designer.vb">
       <DependentUpon>Issue_SparePart.vb</DependentUpon>
     </Compile>

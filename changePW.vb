@@ -8,7 +8,7 @@ Public Class ChangePW
     Inherits Form
 
     ' Database connection
-    Private connectionString As String = "Server=DESKTOP-KGESGJQ\NATNAEL;Database=Inventory;Integrated Security=True;"
+    Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
 
     ' Controls
     Private lblCurrent As Label

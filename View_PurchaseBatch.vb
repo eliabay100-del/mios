@@ -239,6 +239,13 @@ Public Class View_PurchaseBatch
         totalRemaining = 0
         totalValue = 0
 
+        For Each batch In filteredArray
+            totalPurchased += batch.QuantityPurchased
+            totalRemaining += batch.QuantityRemaining
+            totalValue += batch.QuantityRemaining * batch.UnitCost
+        Next
+
+        lblStats.Text = String.Format("Batches: {0} | Purchased: {1:N0} | Remaining: {2:N0} | Remaining value: {3:N2}", totalBatches, totalPurchased, totalRemaining, totalValue)
     End Sub
 
     ' ============ EVENTS ============

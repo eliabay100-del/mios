@@ -238,15 +238,10 @@ Public Class View_SoldItem
 
     Private Sub UpdateStatistics()
         totalItems = filteredArray.Length
-        totalQuantity = 0
-        totalRevenue = 0
+        totalQuantity = filteredArray.Sum(Function(item) item.QuantityIssued)
+        totalRevenue = filteredArray.Sum(Function(item) item.QuantityIssued * item.SellingPrice)
 
-        'For Each i In filteredArray
-        '    totalQuantity += i.QuantityIssued
-        '    totalRevenue += (i.QuantityIssued * i.SellingPrice)
-        'Next
-
-        'lblStats.Text = "Transactions: " & totalItems & " | Total Qty Sold: " & totalQuantity & " | Total Revenue: " & totalRevenue.ToString("N2") & " Birr"
+        lblStats.Text = "Transactions: " & totalItems & " | Total quantity: " & totalQuantity.ToString("N0") & " | Revenue: " & totalRevenue.ToString("N2")
     End Sub
 
     ' ============ EVENTS ============

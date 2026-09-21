@@ -5,7 +5,7 @@ Imports System.Windows.Forms
 Module DBModule
 
     Public ReadOnly ConnString As String =
-        "Server=DESKTOP-KGESGJQ\NATNAEL;Database=INVENTORY;Trusted_Connection=True;"
+        "Server=.\SQLEXPRESS;Database=Inventory;Trusted_Connection=True;TrustServerCertificate=True;"
 
     Public Conn As SqlConnection
 

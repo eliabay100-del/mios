@@ -225,16 +225,53 @@ Public Class View_Inventory
 
     Private Sub dgvInventory_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
         If e.RowIndex >= 0 Then
+            editRowIndex = e.RowIndex
             dgvInventory.ReadOnly = False
+            dgvInventory.Columns("PartNumber").ReadOnly = True
+            dgvInventory.Columns("Category").ReadOnly = True
             btnSave.Visible = True
             btnCancel.Visible = True
         End If
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
+        If editRowIndex < 0 OrElse editRowIndex >= dgvInventory.Rows.Count Then Return
+
+        Dim row As DataGridViewRow = dgvInventory.Rows(editRowIndex)
+        Dim partNumber As String = Convert.ToString(row.Cells("PartNumber").Value).Trim()
+        Dim description As String = Convert.ToString(row.Cells("Description").Value).Trim()
+        Dim quantity As Integer
+        Dim unitPrice As Decimal
+
+        If String.IsNullOrEmpty(description) OrElse
+           Not Integer.TryParse(Convert.ToString(row.Cells("Quantity").Value), quantity) OrElse quantity < 0 OrElse
+           Not Decimal.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), unitPrice) OrElse unitPrice < 0 Then
+            MessageBox.Show("Enter a description, a non-negative quantity, and a non-negative price.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        Try
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Const query As String = "UPDATE mn.SpareParts SET Description = @description, Quantity = @quantity, UnitPrice = @unitPrice WHERE PartNumber = @partNumber"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@description", description)
+                    cmd.Parameters.AddWithValue("@quantity", quantity)
+                    cmd.Parameters.AddWithValue("@unitPrice", unitPrice)
+                    cmd.Parameters.AddWithValue("@partNumber", partNumber)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+            MessageBox.Show("Inventory item saved.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            LoadInventory()
+        Catch ex As Exception
+            MessageBox.Show("Unable to save inventory item: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+
         dgvInventory.ReadOnly = True
         btnSave.Visible = False
         btnCancel.Visible = False
+        editRowIndex = -1
     End Sub
 
     Private Sub btnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
@@ -242,5 +279,6 @@ Public Class View_Inventory
         dgvInventory.ReadOnly = True
         btnSave.Visible = False
         btnCancel.Visible = False
+        editRowIndex = -1
     End Sub
 End Class

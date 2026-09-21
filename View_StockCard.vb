@@ -243,7 +243,6 @@ Public Class View_StockCard
             m.Balance = bal
             list(i) = m
         Next
-        list.Reverse() ' Recent movements first
     End Sub
 
     Private Sub DisplayStockMovements(movements As StockMovement())

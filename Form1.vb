@@ -108,6 +108,7 @@ Public Class Dashboard
             CreateMenuButton("Inventory List", AddressOf btnInventory_Click),
             CreateMenuButton("Purchase Batches", AddressOf btnPurchaseBatch_Click),
             CreateMenuButton("Sold Items", AddressOf btnSoldItem_Click),
+            CreateMenuButton("Stock Card", AddressOf btnStockCard_Click),
             CreateMenuButton("Suppliers", AddressOf btnSupplier_Click),
             CreateMenuButton("Customers", AddressOf btnCustomer_Click)
         }
@@ -134,10 +135,11 @@ Public Class Dashboard
         statGrid.RowStyles.Add(New RowStyle(SizeType.Percent, 50.0!))
         statGrid.RowStyles.Add(New RowStyle(SizeType.Percent, 50.0!))
 
-        statGrid.Controls.Add(CreateStatCard("Stock on hand", "1,284", "↑ 8.4% vs last month"), 0, 0)
-        statGrid.Controls.Add(CreateStatCard("Pending orders", "64", "5 need review"), 1, 0)
-        statGrid.Controls.Add(CreateStatCard("Low inventory", "12 items", "2 critical"), 0, 1)
-        statGrid.Controls.Add(CreateStatCard("Sales today", "₦ 84,500", "Strong performance"), 1, 1)
+        Dim stats = GetDashboardStats()
+        statGrid.Controls.Add(CreateStatCard("Stock on hand", stats.StockOnHand.ToString("N0"), "Current quantity"), 0, 0)
+        statGrid.Controls.Add(CreateStatCard("Purchase batches", stats.PurchaseBatches.ToString("N0"), "Recorded batches"), 1, 0)
+        statGrid.Controls.Add(CreateStatCard("Low inventory", stats.LowInventory.ToString("N0"), "Parts at or below 5"), 0, 1)
+        statGrid.Controls.Add(CreateStatCard("Sales today", stats.SalesToday.ToString("N2"), "Current price total"), 1, 1)
 
         pnlQuickActions.Controls.Add(statGrid)
         Me.Controls.Add(pnlQuickActions)
@@ -150,6 +152,35 @@ Public Class Dashboard
         AddHandler btnExitUI.Click, AddressOf btnExit_Click
         pnlQuickActions.Controls.Add(btnExitUI)
     End Sub
+
+    Private Structure DashboardStats
+        Public StockOnHand As Integer
+        Public PurchaseBatches As Integer
+        Public LowInventory As Integer
+        Public SalesToday As Decimal
+    End Structure
+
+    Private Function GetDashboardStats() As DashboardStats
+        Dim stats As New DashboardStats()
+        Try
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                stats.StockOnHand = Convert.ToInt32(ExecuteScalar(conn, "SELECT ISNULL(SUM(Quantity), 0) FROM mn.SpareParts"))
+                stats.PurchaseBatches = Convert.ToInt32(ExecuteScalar(conn, "SELECT COUNT(*) FROM mn.PurchaseBatch"))
+                stats.LowInventory = Convert.ToInt32(ExecuteScalar(conn, "SELECT COUNT(*) FROM mn.SpareParts WHERE Quantity <= 5"))
+                stats.SalesToday = Convert.ToDecimal(ExecuteScalar(conn, "SELECT ISNULL(SUM(ii.QuantityIssued * sp.UnitPrice), 0) FROM mn.IssuedItem ii JOIN mn.SpareParts sp ON sp.PartNumber = ii.PartNumber WHERE CAST(ii.IssueDate AS DATE) = CAST(GETDATE() AS DATE)"))
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Unable to load dashboard statistics: " & ex.Message, "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
+        Return stats
+    End Function
+
+    Private Function ExecuteScalar(conn As SqlConnection, query As String) As Object
+        Using cmd As New SqlCommand(query, conn)
+            Return cmd.ExecuteScalar()
+        End Using
+    End Function
 
     Private Function CreateMenuButton(text As String, handler As EventHandler) As Button
         Dim btn As Button = ModernTheme.MakePrimaryButton(text)
