@@ -47,6 +47,7 @@ Public Class Supplier
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
         Me.MinimizeBox = False
+        ModernTheme.EnableVerticalScroll(Me, 760)
         InitializeSupplierForm()
     End Sub
 

@@ -19,6 +19,14 @@ Public Module ModernTheme
         form.BackColor = PageBackground
         form.ForeColor = PrimaryText
         form.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular)
+        form.AutoScroll = True
+        form.AutoScrollMinSize = New Size(0, form.ClientSize.Height + 1)
+    End Sub
+
+    Public Sub EnableVerticalScroll(form As Form, contentHeight As Integer)
+        form.AutoScroll = True
+        form.AutoScrollMinSize = New Size(0, Math.Max(contentHeight, form.ClientSize.Height + 1))
+        form.VerticalScroll.Visible = True
     End Sub
 
     Public Function MakePrimaryButton(text As String) As Button

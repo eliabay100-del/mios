@@ -19,6 +19,7 @@ Public Class ChangePasswordForm
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
+        ModernTheme.EnableVerticalScroll(Me, 480)
         InitializeComponents()
     End Sub
 

@@ -21,6 +21,7 @@ Public Class Dashboard
         Me.ControlBox = False
 
         InitializeDashboard()
+        ModernTheme.EnableVerticalScroll(Me, 820)
     End Sub
 
     Private Sub InitializeDashboard()

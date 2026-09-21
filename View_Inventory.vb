@@ -41,6 +41,7 @@ Public Class View_Inventory
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
         Me.MinimizeBox = False
+        ModernTheme.EnableVerticalScroll(Me, 760)
 
         Dim lblTitle As New Label With {
             .Text = "Spare parts inventory",

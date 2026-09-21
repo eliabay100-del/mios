@@ -45,6 +45,7 @@ Public Class View_SoldItem
         Me.Size = New Size(1150, 650)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.BackColor = Color.FromArgb(244, 246, 248)
+        ModernTheme.EnableVerticalScroll(Me, 720)
 
         ' Title
         Dim lblTitle As New Label With {

@@ -40,6 +40,7 @@ Public Class View_StockCard
         Me.Size = New Size(1100, 650)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.BackColor = Color.FromArgb(244, 246, 248)
+        ModernTheme.EnableVerticalScroll(Me, 720)
 
         ' 1. Title
         Dim lblTitle As New Label With {

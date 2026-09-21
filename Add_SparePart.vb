@@ -27,6 +27,7 @@ Public Class Add_SparePart
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
         Me.MinimizeBox = False
+        ModernTheme.EnableVerticalScroll(Me, 720)
         CreateTitle()
         ShowSupplierCheckSection()
     End Sub

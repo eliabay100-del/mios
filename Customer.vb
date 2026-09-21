@@ -41,6 +41,7 @@ Public Class Customer
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
         Me.MinimizeBox = False
+        ModernTheme.EnableVerticalScroll(Me, 700)
 
         lblTitle = New Label With {
             .Text = "Customer database",
