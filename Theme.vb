@@ -2,18 +2,18 @@ Imports System.Drawing
 Imports System.Windows.Forms
 
 Public Module ModernTheme
-    Public ReadOnly PageBackground As Color = Color.FromArgb(14, 16, 15)
-    Public ReadOnly Surface As Color = Color.FromArgb(23, 27, 25)
-    Public ReadOnly SurfaceAlt As Color = Color.FromArgb(31, 36, 33)
-    Public ReadOnly PrimaryText As Color = Color.FromArgb(244, 241, 232)
-    Public ReadOnly MutedText As Color = Color.FromArgb(157, 164, 156)
-    Public ReadOnly Border As Color = Color.FromArgb(54, 61, 56)
-    Public ReadOnly Accent As Color = Color.FromArgb(170, 196, 126)
-    Public ReadOnly AccentDark As Color = Color.FromArgb(108, 137, 76)
-    Public ReadOnly AccentSoft As Color = Color.FromArgb(49, 63, 43)
-    Public ReadOnly Success As Color = Color.FromArgb(139, 190, 116)
-    Public ReadOnly Danger As Color = Color.FromArgb(222, 112, 101)
-    Public ReadOnly Warning As Color = Color.FromArgb(222, 173, 93)
+    Public ReadOnly PageBackground As Color = Color.FromArgb(245, 243, 239)
+    Public ReadOnly Surface As Color = Color.FromArgb(255, 255, 255)
+    Public ReadOnly SurfaceAlt As Color = Color.FromArgb(246, 247, 244)
+    Public ReadOnly PrimaryText As Color = Color.FromArgb(24, 29, 35)
+    Public ReadOnly MutedText As Color = Color.FromArgb(96, 106, 119)
+    Public ReadOnly Border As Color = Color.FromArgb(224, 227, 231)
+    Public ReadOnly Accent As Color = Color.FromArgb(31, 91, 143)
+    Public ReadOnly AccentDark As Color = Color.FromArgb(18, 56, 87)
+    Public ReadOnly AccentSoft As Color = Color.FromArgb(232, 238, 247)
+    Public ReadOnly Success As Color = Color.FromArgb(46, 146, 105)
+    Public ReadOnly Danger As Color = Color.FromArgb(203, 78, 78)
+    Public ReadOnly Warning As Color = Color.FromArgb(212, 150, 78)
 
     Public Sub ApplyWindowTheme(form As Form)
         form.BackColor = PageBackground
@@ -27,7 +27,7 @@ Public Module ModernTheme
         btn.FlatStyle = FlatStyle.Flat
         btn.FlatAppearance.BorderSize = 0
         btn.BackColor = Accent
-        btn.ForeColor = Color.FromArgb(17, 21, 18)
+        btn.ForeColor = Color.White
         btn.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
         btn.Cursor = Cursors.Hand
         btn.UseVisualStyleBackColor = False
@@ -41,7 +41,7 @@ Public Module ModernTheme
         btn.Text = text
         btn.FlatStyle = FlatStyle.Flat
         btn.FlatAppearance.BorderSize = 0
-        btn.BackColor = SurfaceAlt
+        btn.BackColor = Surface
         btn.ForeColor = PrimaryText
         btn.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
         btn.Cursor = Cursors.Hand
@@ -53,7 +53,7 @@ Public Module ModernTheme
 
     Public Function MakeTextBox() As TextBox
         Dim txt As New TextBox
-        txt.BackColor = SurfaceAlt
+        txt.BackColor = Color.White
         txt.ForeColor = PrimaryText
         txt.BorderStyle = BorderStyle.FixedSingle
         txt.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular)
@@ -62,13 +62,13 @@ Public Module ModernTheme
     End Function
 
     Public Sub StyleGrid(grid As DataGridView)
-        grid.BackgroundColor = Surface
+        grid.BackgroundColor = Color.White
         grid.BorderStyle = BorderStyle.None
         grid.EnableHeadersVisualStyles = False
         grid.ColumnHeadersDefaultCellStyle.BackColor = SurfaceAlt
         grid.ColumnHeadersDefaultCellStyle.ForeColor = PrimaryText
         grid.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 9.5F, FontStyle.Bold)
-        grid.DefaultCellStyle.BackColor = Surface
+        grid.DefaultCellStyle.BackColor = Color.White
         grid.DefaultCellStyle.ForeColor = PrimaryText
         grid.DefaultCellStyle.SelectionBackColor = AccentSoft
         grid.DefaultCellStyle.SelectionForeColor = PrimaryText

@@ -27,7 +27,7 @@ Public Class Dashboard
         pnlHeader = New Panel With {
             .Dock = DockStyle.Top,
             .Height = 140,
-            .BackColor = ModernTheme.Surface
+            .BackColor = Color.FromArgb(255, 255, 255)
         }
 
         lblTitle = New Label With {
@@ -74,11 +74,11 @@ Public Class Dashboard
         Dim hero As New Panel With {
             .Location = New Point(0, 0),
             .Size = New Size(1040, 170),
-            .BackColor = ModernTheme.SurfaceAlt
+            .BackColor = Color.FromArgb(28, 39, 44)
         }
         Dim heroText As New Label With {
             .Text = "Your inventory, finally in sync.",
-            .ForeColor = ModernTheme.PrimaryText,
+            .ForeColor = Color.White,
             .Font = New Font("Segoe UI", 26, FontStyle.Bold),
             .Location = New Point(26, 28),
             .AutoSize = True
@@ -86,7 +86,7 @@ Public Class Dashboard
         hero.Controls.Add(heroText)
         Dim heroSub As New Label With {
             .Text = "Track stock movement, purchasing, customers, and suppliers from one dashboard.",
-            .ForeColor = ModernTheme.MutedText,
+            .ForeColor = Color.FromArgb(210, 210, 210),
             .Font = New Font("Segoe UI", 11.0F),
             .Location = New Point(28, 80),
             .Size = New Size(500, 50)
@@ -96,9 +96,9 @@ Public Class Dashboard
 
         Dim actionPanel As New FlowLayoutPanel With {
             .Location = New Point(0, 190),
-            .Size = New Size(1040, 150),
+            .Size = New Size(1040, 100),
             .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = True,
+            .WrapContents = False,
             .BackColor = Color.Transparent
         }
 
@@ -123,7 +123,7 @@ Public Class Dashboard
         pnlQuickActions.Controls.Add(actionPanel)
 
         Dim statGrid As New TableLayoutPanel With {
-            .Location = New Point(0, 338),
+            .Location = New Point(0, 298),
             .Size = New Size(1040, 260),
             .ColumnCount = 2,
             .RowCount = 2,
@@ -186,7 +186,7 @@ Public Class Dashboard
         Dim btn As Button = ModernTheme.MakePrimaryButton(text)
         btn.Width = 180
         btn.Height = 54
-        btn.BackColor = ModernTheme.Surface
+        btn.BackColor = Color.White
         btn.ForeColor = ModernTheme.PrimaryText
         btn.FlatAppearance.BorderColor = ModernTheme.Border
         btn.FlatAppearance.BorderSize = 1
@@ -197,7 +197,7 @@ Public Class Dashboard
 
     Private Function CreateStatCard(title As String, value As String, note As String) As Panel
         Dim card As New Panel With {
-            .BackColor = ModernTheme.Surface,
+            .BackColor = Color.White,
             .Padding = New Padding(16),
             .Height = 110,
             .Margin = New Padding(8)

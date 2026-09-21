@@ -21,15 +21,14 @@ Public Class LoginNew
     Public Sub New()
         ' Form settings
         Me.Text = "Login - Inventory System"
-        ModernTheme.ApplyWindowTheme(Me)
-        Me.Size = New Size(520, 360)
+        Me.Size = New Size(400, 250)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
 
         ' Add controls
-        Me.Controls.Add(New Label With {.Text = "Username:", .ForeColor = ModernTheme.MutedText, .Location = New Point(70, 92), .Size = New Size(80, 25)})
+        Me.Controls.Add(New Label With {.Text = "Username:", .Location = New Point(50, 70), .Size = New Size(80, 25)})
         Me.Controls.Add(txtUsername)
-        Me.Controls.Add(New Label With {.Text = "Password:", .ForeColor = ModernTheme.MutedText, .Location = New Point(70, 142), .Size = New Size(80, 25)})
+        Me.Controls.Add(New Label With {.Text = "Password:", .Location = New Point(50, 110), .Size = New Size(80, 25)})
         Me.Controls.Add(txtPassword)
         Me.Controls.Add(lblError)
         Me.Controls.Add(btnLogin)
@@ -39,17 +38,6 @@ Public Class LoginNew
         AddHandler txtPassword.KeyPress, AddressOf txtPassword_KeyPress
         AddHandler Me.Load, AddressOf LoginNew_Load
 
-        txtUsername.Location = New Point(170, 88)
-        txtUsername.Width = 270
-        txtPassword.Location = New Point(170, 138)
-        txtPassword.Width = 270
-        btnLogin.Location = New Point(170, 228)
-        btnLogin.Size = New Size(270, 42)
-        btnLogin.BackColor = ModernTheme.Accent
-        lblError.Location = New Point(170, 178)
-        lblError.Size = New Size(270, 24)
-        Me.Controls.Add(New Label With {.Text = "MIOS / INVENTORY", .Font = New Font("Segoe UI", 18, FontStyle.Bold), .ForeColor = ModernTheme.PrimaryText, .Location = New Point(70, 34), .AutoSize = True})
-        Me.Controls.Add(New Label With {.Text = "Sign in to your operations workspace", .ForeColor = ModernTheme.MutedText, .Location = New Point(72, 62), .AutoSize = True})
         txtUsername.Focus()
     End Sub
 
