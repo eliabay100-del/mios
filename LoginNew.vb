@@ -91,7 +91,7 @@ Public Class LoginNew
         Try
             Using con As New SqlConnection(connectionString)
                 con.Open()
-                Using cmd As New SqlCommand("SELECT UserID, Username, PasswordHash FROM mn.UUser WHERE Username = @u", con)
+                Using cmd As New SqlCommand("SELECT u.UserID, u.Username, u.PasswordHash, ISNULL(r.RoleName, 'Storekeeper') AS RoleName FROM mn.UUser u LEFT JOIN mn.UserRole ur ON ur.UserID = u.UserID LEFT JOIN mn.Role r ON r.RoleID = ur.RoleID WHERE u.Username = @u", con)
                     cmd.Parameters.AddWithValue("@u", usernameInput)
                     Using reader = cmd.ExecuteReader()
                         If reader.Read() Then
@@ -101,6 +101,9 @@ Public Class LoginNew
                                 LoginSuccessful = True
                                 UserID = Convert.ToInt32(reader("UserID"))
                                 Username = reader("Username").ToString()
+                                SecurityContext.CurrentUserID = UserID
+                                SecurityContext.CurrentUsername = Username
+                                SecurityContext.CurrentRole = reader("RoleName").ToString()
 
                                 ' Open Dashboard
                                 Dim dashboard As New Dashboard()

@@ -13,6 +13,9 @@ Public Class PaymentForm
     Private ReadOnly lblError As New Label()
 
     Public Sub New()
+        If Not SecurityContext.HasPermission("PAYMENT_MANAGE") Then
+            Throw New UnauthorizedAccessException("Your role cannot record payments.")
+        End If
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Record payment"
         Me.Size = New Size(560, 430)

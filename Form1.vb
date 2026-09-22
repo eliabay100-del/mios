@@ -56,7 +56,7 @@ Public Class Dashboard
             .BorderStyle = BorderStyle.None
         }
         Dim userText As New Label With {
-            .Text = If(String.IsNullOrEmpty(Username), "Admin User", Username),
+            .Text = If(String.IsNullOrEmpty(Username), "Admin User", Username) & "  /  " & If(String.IsNullOrEmpty(SecurityContext.CurrentRole), "User", SecurityContext.CurrentRole),
             .ForeColor = ModernTheme.PrimaryText,
             .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
             .AutoSize = True,
@@ -157,6 +157,7 @@ Public Class Dashboard
         btnPayment.Location = New Point(790, 560)
         btnPayment.Width = 125
         btnPayment.Height = 38
+        btnPayment.Visible = SecurityContext.HasPermission("PAYMENT_MANAGE")
         AddHandler btnPayment.Click, Sub(sender, e)
                                         Using paymentForm As New PaymentForm()
                                             paymentForm.ShowDialog()

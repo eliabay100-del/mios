@@ -61,6 +61,15 @@ Add the purchasing, sales, payment, and accounting tables:
 sqlcmd -S ".\SQLEXPRESS" -E -C -d Inventory -i ".\upgrade_accounting_lifecycle.sql"
 ```
 
+Add roles, permissions, and audit logging:
+
+```powershell
+sqlcmd -S ".\SQLEXPRESS" -E -C -d Inventory -i ".\upgrade_security_roles.sql"
+```
+- Roles for administrators, managers, storekeepers, and accountants
+- Permission checks for sensitive actions
+- Audit logging for posted accounting entries
+
 The setup script creates the `Inventory` database, the `mn` schema, all tables,
 and the default `General` category and `New` condition required by the add-part
 form.

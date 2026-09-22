@@ -18,10 +18,19 @@ Module UserSetup
     Public Sub CreateUser(username As String, password As String)
         Using con As New SqlConnection(connectionString)
             con.Open()
-            Using cmd As New SqlCommand("INSERT INTO mn.UUser (Username, PasswordHash) VALUES (@u, @p)", con)
-                cmd.Parameters.AddWithValue("@u", username.Trim())
-                cmd.Parameters.AddWithValue("@p", HashPassword(password))
-                cmd.ExecuteNonQuery()
+            Using transaction = con.BeginTransaction()
+                Dim userID As Integer
+                Using cmd As New SqlCommand("INSERT INTO mn.UUser (Username, PasswordHash) OUTPUT INSERTED.UserID VALUES (@u, @p)", con, transaction)
+                    cmd.Parameters.AddWithValue("@u", username.Trim())
+                    cmd.Parameters.AddWithValue("@p", HashPassword(password))
+                    userID = Convert.ToInt32(cmd.ExecuteScalar())
+                End Using
+
+                Using cmd As New SqlCommand("INSERT INTO mn.UserRole (UserID, RoleID) SELECT @userID, RoleID FROM mn.Role WHERE RoleName = 'Admin'", con, transaction)
+                    cmd.Parameters.AddWithValue("@userID", userID)
+                    cmd.ExecuteNonQuery()
+                End Using
+                transaction.Commit()
             End Using
         End Using
     End Sub
