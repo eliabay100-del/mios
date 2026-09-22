@@ -52,6 +52,9 @@ Public Module ModernTheme
         Dim scale As Single = dpi / 96.0F
         If Math.Abs(scale - 1.0F) < 0.01F Then Return
 
+        ' Scale fonts as well as geometry so explicit runtime-created fonts
+        ' remain proportional at 125%, 150%, 175%, etc.
+        form.Font = ScaleFont(form.Font, scale)
         ScaleControlTree(form, scale)
 
         If form.WindowState <> FormWindowState.Maximized Then
@@ -81,6 +84,7 @@ Public Module ModernTheme
 
             child.Padding = ScalePadding(child.Padding, scale)
             child.Margin = ScalePadding(child.Margin, scale)
+            child.Font = ScaleFont(child.Font, scale)
 
             If child.MinimumSize.Width > 0 OrElse child.MinimumSize.Height > 0 Then
                 child.MinimumSize = ScaleSize(child.MinimumSize, scale)
@@ -121,6 +125,11 @@ Public Module ModernTheme
             Math.Max(0, CInt(Math.Round(value.Width * scale))),
             Math.Max(0, CInt(Math.Round(value.Height * scale)))
         )
+    End Function
+
+    Private Function ScaleFont(value As Font, scale As Single) As Font
+        If value Is Nothing Then Return value
+        Return New Font(value.FontFamily, value.Size * scale, value.Style, value.Unit, value.GdiCharSet, value.GdiVerticalFont)
     End Function
 
     Private Function ScalePadding(value As Padding, scale As Single) As Padding
