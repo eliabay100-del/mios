@@ -1,1 +1,36 @@
-Nothing should be ignored since only source code files (.vb files) are being modified and no build artifacts, dependencies, or temporary files are present in the changes.
+```
+# Visual Studio/Visual Basic build artifacts
+*.obj
+*.exe
+*.dll
+*.pdb
+*.userprefs
+*.cache
+*.log
+*.tmp
+
+# Visual Studio/Visual Basic intermediate files
+Debug/
+Release/
+bin/
+obj/
+
+# Visual Studio Code
+.vscode/
+
+# Windows system files
+Thumbs.db
+Desktop.ini
+
+# Environment files
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*~
+```
