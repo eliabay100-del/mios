@@ -66,9 +66,20 @@ Add roles, permissions, and audit logging:
 ```powershell
 sqlcmd -S ".\SQLEXPRESS" -E -C -d Inventory -i ".\upgrade_security_roles.sql"
 ```
+
+Add adjustments, returns, expenses, and reporting support:
+
+```powershell
+sqlcmd -S ".\SQLEXPRESS" -E -C -d Inventory -i ".\upgrade_operations.sql"
+```
 - Roles for administrators, managers, storekeepers, and accountants
 - Permission checks for sensitive actions
 - Audit logging for posted accounting entries
+- User and role management
+- Stock adjustments with reasons and audit history
+- Customer and supplier returns
+- Expense recording and financial summaries
+- Administrator database backup action
 
 The setup script creates the `Inventory` database, the `mn` schema, all tables,
 and the default `General` category and `New` condition required by the add-part

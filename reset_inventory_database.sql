@@ -13,6 +13,10 @@ DELETE FROM [mn].[Payment];
 DELETE FROM [mn].[AuditLog];
 DELETE FROM [mn].[RolePermission];
 DELETE FROM [mn].[UserRole];
+DELETE FROM [mn].[Expense];
+DELETE FROM [mn].[PurchaseReturn];
+DELETE FROM [mn].[SalesReturn];
+DELETE FROM [mn].[InventoryAdjustment];
 DELETE FROM [mn].[SalesInvoiceLine];
 DELETE FROM [mn].[SalesInvoice];
 DELETE FROM [mn].[PurchaseReceiptLine];
@@ -45,6 +49,10 @@ DBCC CHECKIDENT (N'[mn].[SalesInvoiceLine]', RESEED, 0) WITH NO_INFOMSGS;
 DBCC CHECKIDENT (N'[mn].[SalesInvoice]', RESEED, 0) WITH NO_INFOMSGS;
 DBCC CHECKIDENT (N'[mn].[PurchaseReceiptLine]', RESEED, 0) WITH NO_INFOMSGS;
 DBCC CHECKIDENT (N'[mn].[PurchaseReceipt]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[Expense]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[PurchaseReturn]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[SalesReturn]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[InventoryAdjustment]', RESEED, 0) WITH NO_INFOMSGS;
 
 IF OBJECT_ID(N'[mn].[Users]', N'U') IS NOT NULL
     DBCC CHECKIDENT (N'[mn].[Users]', RESEED, 0) WITH NO_INFOMSGS;

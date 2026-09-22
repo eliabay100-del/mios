@@ -164,6 +164,47 @@ Public Class Dashboard
                                         End Using
                                     End Sub
         pnlQuickActions.Controls.Add(btnPayment)
+
+        AddDashboardAction("Users & Roles", 30, 610, SecurityContext.HasPermission("USER_MANAGE"), Sub()
+            Using form As New UserManagementForm()
+                form.ShowDialog()
+            End Using
+        End Sub)
+        AddDashboardAction("Adjust Stock", 185, 610, SecurityContext.HasPermission("INVENTORY_ADJUST"), Sub()
+            Using form As New InventoryAdjustmentForm()
+                form.ShowDialog()
+            End Using
+        End Sub)
+        AddDashboardAction("Financial Reports", 340, 610, SecurityContext.HasPermission("REPORT_VIEW"), Sub()
+            Using form As New FinancialReportsForm()
+                form.ShowDialog()
+            End Using
+        End Sub)
+        AddDashboardAction("Record Expense", 495, 610, SecurityContext.HasPermission("EXPENSE_MANAGE"), Sub()
+            Using form As New ExpenseForm()
+                form.ShowDialog()
+            End Using
+        End Sub)
+        AddDashboardAction("Process Return", 650, 610, SecurityContext.HasPermission("RETURN_MANAGE"), Sub()
+            Using form As New ReturnForm()
+                form.ShowDialog()
+            End Using
+        End Sub)
+        AddDashboardAction("Database Backup", 805, 610, SecurityContext.HasRole("Admin"), Sub()
+            Using form As New BackupForm()
+                form.ShowDialog()
+            End Using
+        End Sub)
+    End Sub
+
+    Private Sub AddDashboardAction(text As String, x As Integer, y As Integer, visible As Boolean, action As Action)
+        Dim button As Button = ModernTheme.MakeSecondaryButton(text)
+        button.Location = New Point(x, y)
+        button.Width = 145
+        button.Height = 38
+        button.Visible = visible
+        AddHandler button.Click, Sub(sender, e) action()
+        pnlQuickActions.Controls.Add(button)
     End Sub
 
     Private Structure DashboardStats
