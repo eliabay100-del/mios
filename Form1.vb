@@ -73,7 +73,11 @@ Public Class Dashboard
         Dim btnHeaderExit As Button = ModernTheme.MakeSecondaryButton("Exit")
         btnHeaderExit.Location = New Point(820, 48)
         btnHeaderExit.Size = New Size(110, 42)
-        btnHeaderExit.ForeColor = ModernTheme.Danger
+        btnHeaderExit.BackColor = ModernTheme.Danger
+        btnHeaderExit.ForeColor = Color.White
+        btnHeaderExit.FlatAppearance.BorderColor = ModernTheme.Danger
+        btnHeaderExit.FlatAppearance.MouseOverBackColor = Color.FromArgb(190, 45, 45)
+        btnHeaderExit.FlatAppearance.MouseDownBackColor = Color.FromArgb(165, 35, 35)
         AddHandler btnHeaderExit.Click, AddressOf btnExit_Click
         pnlHeader.Controls.Add(btnHeaderExit)
 
@@ -220,6 +224,11 @@ Public Class Dashboard
         button.Height = 42
         button.AutoEllipsis = False
         button.Padding = New Padding(8, 4, 8, 4)
+        button.BackColor = Color.FromArgb(54, 69, 79)
+        button.ForeColor = Color.White
+        button.FlatAppearance.BorderColor = Color.FromArgb(54, 69, 79)
+        button.FlatAppearance.MouseOverBackColor = Color.FromArgb(70, 87, 98)
+        button.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 54, 62)
         button.Visible = visible
         AddHandler button.Click, Sub(sender, e)
                                     Try
