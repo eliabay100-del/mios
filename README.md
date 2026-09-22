@@ -55,6 +55,12 @@ Create the database and tables:
 sqlcmd -S ".\SQLEXPRESS" -E -C -i ".\create_inventory_database.sql"
 ```
 
+Add the purchasing, sales, payment, and accounting tables:
+
+```powershell
+sqlcmd -S ".\SQLEXPRESS" -E -C -d Inventory -i ".\upgrade_accounting_lifecycle.sql"
+```
+
 The setup script creates the `Inventory` database, the `mn` schema, all tables,
 and the default `General` category and `New` condition required by the add-part
 form.
@@ -62,8 +68,9 @@ form.
 ## Reset all application data
 
 `reset_inventory_database.sql` permanently deletes all MIOS users, passwords,
-customers, suppliers, parts, purchase batches, issued items, and stock-card
-history. It keeps the category and condition lookup rows.
+customers, suppliers, parts, purchase batches, purchase receipts, sales
+invoices, payments, journal entries, issued items, and stock-card history. It
+keeps the category, condition, and chart-of-accounts lookup rows.
 
 Run it only when a clean database is intended:
 

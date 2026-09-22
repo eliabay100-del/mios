@@ -567,6 +567,9 @@ Public Class Issue_SparePart
                 Try
                     ' Handle customer (new or existing)
                     Dim issuedTo As String = ""
+                    Dim invoiceID As Integer
+                    Dim totalRevenue As Decimal = 0
+                    Dim totalCOGSForInvoice As Decimal = 0
 
                     If isNewCustomer Then
                         ' Insert new customer (PHP: INSERT INTO mn.Customers)
@@ -588,6 +591,13 @@ Public Class Issue_SparePart
                         ' Get existing customer name
                         issuedTo = customerName
                     End If
+
+                    Dim invoiceSql As String = "INSERT INTO mn.SalesInvoice (CustomerID, Subtotal, TaxAmount, TotalAmount, AmountPaid, Status, Remarks) OUTPUT INSERTED.InvoiceID VALUES (@customerID, 0, 0, 0, 0, 'UNPAID', @remarks)"
+                    Using cmd As New SqlCommand(invoiceSql, conn, transaction)
+                        cmd.Parameters.AddWithValue("@customerID", customerID)
+                        cmd.Parameters.AddWithValue("@remarks", If(String.IsNullOrEmpty(remarks), DBNull.Value, remarks))
+                        invoiceID = Convert.ToInt32(cmd.ExecuteScalar())
+                    End Using
 
                     ' Process each item
                     For Each item As ItemData In items
@@ -667,6 +677,18 @@ Public Class Issue_SparePart
                             Throw New Exception($"Not enough stock while issuing {item.PartNumber}")
                         End If
 
+                        totalRevenue += originalQty * item.SellingPrice
+                        totalCOGSForInvoice += totalCOGS
+                        Dim invoiceLineSql As String = "INSERT INTO mn.SalesInvoiceLine (InvoiceID, PartNumber, Quantity, UnitPrice, UnitCost) VALUES (@invoiceID, @partNumber, @quantity, @unitPrice, @unitCost)"
+                        Using cmd As New SqlCommand(invoiceLineSql, conn, transaction)
+                            cmd.Parameters.AddWithValue("@invoiceID", invoiceID)
+                            cmd.Parameters.AddWithValue("@partNumber", item.PartNumber)
+                            cmd.Parameters.AddWithValue("@quantity", originalQty)
+                            cmd.Parameters.AddWithValue("@unitPrice", item.SellingPrice)
+                            cmd.Parameters.AddWithValue("@unitCost", totalCOGS / originalQty)
+                            cmd.ExecuteNonQuery()
+                        End Using
+
                         ' PROCESS EACH BATCH
                         For Each batch As BatchData In batches
                             ' Insert into IssuedItem (PHP: INSERT INTO mn.IssuedParts)
@@ -730,6 +752,21 @@ Public Class Issue_SparePart
                             cmd.ExecuteNonQuery()
                         End Using
                     Next
+
+                    Dim updateInvoiceSql As String = "UPDATE mn.SalesInvoice SET Subtotal = @subtotal, TotalAmount = @total WHERE InvoiceID = @invoiceID"
+                    Using cmd As New SqlCommand(updateInvoiceSql, conn, transaction)
+                        cmd.Parameters.AddWithValue("@subtotal", totalRevenue)
+                        cmd.Parameters.AddWithValue("@total", totalRevenue)
+                        cmd.Parameters.AddWithValue("@invoiceID", invoiceID)
+                        cmd.ExecuteNonQuery()
+                    End Using
+
+                    AccountingService.PostJournalEntry(conn, transaction, "SALE", invoiceID, "Spare parts issued to customer", New List(Of JournalLineData) From {
+                        New JournalLineData With {.AccountCode = "1100", .Debit = totalRevenue, .Credit = 0},
+                        New JournalLineData With {.AccountCode = "4000", .Debit = 0, .Credit = totalRevenue},
+                        New JournalLineData With {.AccountCode = "5000", .Debit = totalCOGSForInvoice, .Credit = 0},
+                        New JournalLineData With {.AccountCode = "1200", .Debit = 0, .Credit = totalCOGSForInvoice}
+                    })
 
                     ' Commit transaction (PHP: sqlsrv_commit)
                     transaction.Commit()

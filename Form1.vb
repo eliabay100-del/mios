@@ -152,6 +152,17 @@ Public Class Dashboard
         btnExitUI.ForeColor = ModernTheme.Danger
         AddHandler btnExitUI.Click, AddressOf btnExit_Click
         pnlQuickActions.Controls.Add(btnExitUI)
+
+        Dim btnPayment As Button = ModernTheme.MakePrimaryButton("Record Payment")
+        btnPayment.Location = New Point(790, 560)
+        btnPayment.Width = 125
+        btnPayment.Height = 38
+        AddHandler btnPayment.Click, Sub(sender, e)
+                                        Using paymentForm As New PaymentForm()
+                                            paymentForm.ShowDialog()
+                                        End Using
+                                    End Sub
+        pnlQuickActions.Controls.Add(btnPayment)
     End Sub
 
     Private Structure DashboardStats

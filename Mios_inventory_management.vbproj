@@ -79,6 +79,7 @@
     <Compile Include="Add_SparePart.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="AccountingService.vb" />
     <Compile Include="ChangePasswordForm.Designer.vb">
       <DependentUpon>ChangePasswordForm.vb</DependentUpon>
     </Compile>
@@ -124,6 +125,9 @@
       <DependentUpon>LoginNew.vb</DependentUpon>
     </Compile>
     <Compile Include="LoginNew.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PaymentForm.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="AssemblyInfo.vb" />

@@ -537,6 +537,28 @@ Public Class Add_SparePart
                         End Using
                     End If
 
+                    Dim receiptID As Integer
+                    Dim receiptSql As String = "INSERT INTO mn.PurchaseReceipt (SupplierID, TotalAmount, AmountPaid, Status, Notes) OUTPUT INSERTED.ReceiptID VALUES (@supplierID, @total, 0, 'UNPAID', 'Received through Add Spare Part')"
+                    Using cmd As New SqlCommand(receiptSql, conn, transaction)
+                        cmd.Parameters.AddWithValue("@supplierID", currentSupplierID)
+                        cmd.Parameters.AddWithValue("@total", quantity * unitPrice)
+                        receiptID = Convert.ToInt32(cmd.ExecuteScalar())
+                    End Using
+
+                    Dim receiptLineSql As String = "INSERT INTO mn.PurchaseReceiptLine (ReceiptID, PartNumber, Quantity, UnitCost) VALUES (@receiptID, @partNumber, @quantity, @unitCost)"
+                    Using cmd As New SqlCommand(receiptLineSql, conn, transaction)
+                        cmd.Parameters.AddWithValue("@receiptID", receiptID)
+                        cmd.Parameters.AddWithValue("@partNumber", partNumber)
+                        cmd.Parameters.AddWithValue("@quantity", quantity)
+                        cmd.Parameters.AddWithValue("@unitCost", unitPrice)
+                        cmd.ExecuteNonQuery()
+                    End Using
+
+                    AccountingService.PostJournalEntry(conn, transaction, "PURCHASE", receiptID, "Inventory received from supplier", New List(Of JournalLineData) From {
+                        New JournalLineData With {.AccountCode = "1200", .Debit = quantity * unitPrice, .Credit = 0},
+                        New JournalLineData With {.AccountCode = "2000", .Debit = 0, .Credit = quantity * unitPrice}
+                    })
+
                     Dim batchSql As String = "INSERT INTO mn.PurchaseBatch (PartNumber, SupplierID, PurchaseDate, QuantityPurchased, QuantityRemaining, UnitCost) VALUES (@partNum, @supID, GETDATE(), @qty, @qty, @cost)"
                     Using cmd As New SqlCommand(batchSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@partNum", partNumber)

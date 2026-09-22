@@ -1,10 +1,19 @@
 USE [Inventory];
 GO
 
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 
 -- Keep lookup data required by the Add Spare Part form.
+DELETE FROM [mn].[JournalLine];
+DELETE FROM [mn].[JournalEntry];
+DELETE FROM [mn].[Payment];
+DELETE FROM [mn].[SalesInvoiceLine];
+DELETE FROM [mn].[SalesInvoice];
+DELETE FROM [mn].[PurchaseReceiptLine];
+DELETE FROM [mn].[PurchaseReceipt];
 DELETE FROM [mn].[StockCard];
 DELETE FROM [mn].[IssuedItem];
 DELETE FROM [mn].[PurchaseBatch];
@@ -25,6 +34,13 @@ DBCC CHECKIDENT (N'[mn].[SpareParts]', RESEED, 0) WITH NO_INFOMSGS;
 DBCC CHECKIDENT (N'[mn].[Customer]', RESEED, 0) WITH NO_INFOMSGS;
 DBCC CHECKIDENT (N'[mn].[Supplier]', RESEED, 0) WITH NO_INFOMSGS;
 DBCC CHECKIDENT (N'[mn].[UUser]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[JournalLine]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[JournalEntry]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[Payment]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[SalesInvoiceLine]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[SalesInvoice]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[PurchaseReceiptLine]', RESEED, 0) WITH NO_INFOMSGS;
+DBCC CHECKIDENT (N'[mn].[PurchaseReceipt]', RESEED, 0) WITH NO_INFOMSGS;
 
 IF OBJECT_ID(N'[mn].[Users]', N'U') IS NOT NULL
     DBCC CHECKIDENT (N'[mn].[Users]', RESEED, 0) WITH NO_INFOMSGS;
@@ -38,5 +54,10 @@ UNION ALL SELECT 'Supplier', COUNT(*) FROM [mn].[Supplier]
 UNION ALL SELECT 'SpareParts', COUNT(*) FROM [mn].[SpareParts]
 UNION ALL SELECT 'PurchaseBatch', COUNT(*) FROM [mn].[PurchaseBatch]
 UNION ALL SELECT 'IssuedItem', COUNT(*) FROM [mn].[IssuedItem]
-UNION ALL SELECT 'StockCard', COUNT(*) FROM [mn].[StockCard];
+UNION ALL SELECT 'StockCard', COUNT(*) FROM [mn].[StockCard]
+UNION ALL SELECT 'PurchaseReceipt', COUNT(*) FROM [mn].[PurchaseReceipt]
+UNION ALL SELECT 'SalesInvoice', COUNT(*) FROM [mn].[SalesInvoice]
+UNION ALL SELECT 'Payment', COUNT(*) FROM [mn].[Payment]
+UNION ALL SELECT 'JournalEntry', COUNT(*) FROM [mn].[JournalEntry]
+UNION ALL SELECT 'JournalLine', COUNT(*) FROM [mn].[JournalLine];
 GO
