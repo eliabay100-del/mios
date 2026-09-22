@@ -71,7 +71,8 @@ Public Module ModernTheme
             button.FlatAppearance.BorderSize = 0
             button.UseVisualStyleBackColor = False
             button.Cursor = Cursors.Hand
-            RoundButton(button)
+            button.FlatAppearance.MouseDownBackColor = AccentDark
+            button.FlatAppearance.MouseOverBackColor = AccentDark
         End If
         For Each child As Control In root.Controls
             StyleButtons(child)
