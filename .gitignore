@@ -1,67 +1,15 @@
-```
-# Visual Studio/Visual Basic artifacts
-*.vbproj.user
-*.userprefs
-bin/
-obj/
-Debug/
-Release/
-*.suo
-*.user
-*.aps
-*.pch
-*.vspscc
-*.vssscc
-*_i.c
-*_p.c
-*.tlb
-*.tlh
-*.bak
-*.cache
-*.ilk
-*.log
-*.lib
-*.sbr
-*.tmp
-*.pdb
-*.exp
-*.tlog
-*.dmp
-*.zip
-*.rar
-*.7z
-*.tar
-*.gz
-*.tgz
-*.bz2
-*.xz
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
-
-# Environment variables
+# Environment
 .env
 .env.local
-*.env.*
+.env.*
 
-# IDE specific
+# Logs and temp files
+*.log
+*.tmp
+
+# Editors
 .vscode/
-.idea/
-*.swp
-*.swo
 
 # OS generated files
 .DS_Store
 Thumbs.db
-```
