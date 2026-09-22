@@ -14,7 +14,7 @@ Public Module LanguageService
         {"Adjust Stock", "የእቃ ማስተካከያ"}, {"Financial Reports", "የፋይናንስ ሪፖርቶች"},
         {"Record Expense", "ወጪ መዝግብ"}, {"Process Return", "መመለሻ አስኬድ"},
         {"Database Backup", "የዳታቤዝ ባክአፕ"}, {"Exit", "ውጣ"}, {"Stock on hand", "በእጅ ያለ እቃ"},
-        {"Purchase batches", "የግዢ ብዛት"}, {"Low inventory", "ዝቅተኛ እቃ"}, {"Sales today", "የዛሬ ሽያጭ"},
+        {"Low inventory", "ዝቅተኛ እቃ"}, {"Sales today", "የዛሬ ሽያጭ"},
         {"Current quantity", "አሁን ያለ መጠን"}, {"Recorded batches", "የተመዘገቡ ግዢዎች"},
         {"Parts at or below 5", "ከ5 ወይም ከዚያ በታች"}, {"Current price total", "የአሁኑ ዋጋ ድምር"}
     }
