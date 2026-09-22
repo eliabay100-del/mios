@@ -151,24 +151,36 @@ Public Class ChangePasswordForm
         End If
 
         Try
-            Dim currentPasswordHash As String = HashPassword(txtCurrentPassword.Text)
-            Dim newPasswordHash As String = HashPassword(txtNewPassword.Text)
-            Dim query As String = "UPDATE mn.UUser SET PasswordHash = @newPassword WHERE Username = @username AND PasswordHash = @currentPassword"
+            Dim newPasswordHash As String = SecurityService.HashPassword(txtNewPassword.Text)
+            Dim query As String = "SELECT UserID, PasswordHash FROM mn.UUser WHERE Username = @username"
 
             Using connection As New SqlConnection(connectionString)
                 connection.Open()
                 Using cmd As New SqlCommand(query, connection)
-                    cmd.Parameters.AddWithValue("@newPassword", newPasswordHash)
                     cmd.Parameters.AddWithValue("@username", txtCurrentUsername.Text.Trim())
-                    cmd.Parameters.AddWithValue("@currentPassword", currentPasswordHash)
-                    Dim rowsAffected As Integer = cmd.ExecuteNonQuery()
-                    If rowsAffected > 0 Then
+                    Using reader = cmd.ExecuteReader()
+                        If Not reader.Read() Then
+                            lblError.Text = "Current username or password is incorrect"
+                            Return
+                        End If
+                        Dim userID = Convert.ToInt32(reader("UserID"))
+                        Dim storedHash = reader("PasswordHash").ToString()
+                        Dim valid = SecurityService.VerifyPassword(txtCurrentPassword.Text, storedHash)
+                        If Not valid AndAlso SecurityService.IsLegacyHash(storedHash) Then valid = SecurityService.VerifyLegacySha256(txtCurrentPassword.Text, storedHash)
+                        If Not valid Then
+                            lblError.Text = "Current username or password is incorrect"
+                            Return
+                        End If
+                        reader.Close()
+                        Using update As New SqlCommand("UPDATE mn.UUser SET PasswordHash = @newPassword WHERE UserID = @userID", connection)
+                            update.Parameters.AddWithValue("@newPassword", newPasswordHash)
+                            update.Parameters.AddWithValue("@userID", userID)
+                            update.ExecuteNonQuery()
+                        End Using
                         MessageBox.Show("Password changed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         Me.DialogResult = DialogResult.OK
                         Me.Close()
-                    Else
-                        lblError.Text = "Current username or password is incorrect"
-                    End If
+                    End Using
                 End Using
                 connection.Close()
             End Using
@@ -182,11 +194,12 @@ Public Class ChangePasswordForm
         Me.Close()
     End Sub
 
-    Private Function HashPassword(password As String) As String
-        Using sha256 As Security.Cryptography.SHA256 = Security.Cryptography.SHA256.Create()
-            Dim bytes As Byte() = Encoding.UTF8.GetBytes(password)
-            Dim hash As Byte() = sha256.ComputeHash(bytes)
-            Return Convert.ToBase64String(hash)
-        End Using
-    End Function
+    ' Legacy hash function removed, PBKDF2 will be used instead
+    ' Private Function HashPassword(password As String) As String
+    '     Using sha256 As Security.Cryptography.SHA256 = Security.Cryptography.SHA256.Create()
+    '         Dim bytes As Byte() = Encoding.UTF8.GetBytes(password)
+    '         Dim hash As Byte() = sha256.ComputeHash(bytes)
+    '         Return Convert.ToBase64String(hash)
+    '     End Using
+    ' End Function
 End Class

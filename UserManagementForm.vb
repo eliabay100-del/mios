@@ -110,6 +110,7 @@ Public Class UserManagementForm
                     Using cmd As New SqlCommand("INSERT INTO mn.UUser (Username, PasswordHash) OUTPUT INSERTED.UserID VALUES (@username, @hash)", conn, transaction)
                         cmd.Parameters.AddWithValue("@username", txtUsername.Text.Trim())
                         cmd.Parameters.AddWithValue("@hash", HashPassword(txtPassword.Text))
+                            cmd.Parameters.AddWithValue("@hash", SecurityService.HashPassword(txtPassword.Text))
                         userID = Convert.ToInt32(cmd.ExecuteScalar())
                     End Using
                     Using cmd As New SqlCommand("INSERT INTO mn.UserRole (UserID, RoleID) SELECT @userID, RoleID FROM mn.Role WHERE RoleName = @role", conn, transaction)
@@ -129,9 +130,10 @@ Public Class UserManagementForm
         End Try
     End Sub
 
-    Private Function HashPassword(password As String) As String
-        Using sha256 As SHA256 = SHA256.Create()
-            Return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)))
-        End Using
-    End Function
+    ' Legacy hash function removed, PBKDF2 will be used instead
+    ' Private Function HashPassword(password As String) As String
+    '     Using sha256 As SHA256 = SHA256.Create()
+    '         Return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)))
+    '     End Using
+    ' End Function
 End Class

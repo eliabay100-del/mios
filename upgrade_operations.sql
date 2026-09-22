@@ -5,6 +5,12 @@ SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
 GO
 
+IF COL_LENGTH(N'mn.SpareParts', N'ReorderLevel') IS NULL
+    ALTER TABLE [mn].[SpareParts] ADD ReorderLevel INT NOT NULL CONSTRAINT DF_SpareParts_ReorderLevel DEFAULT 5;
+IF COL_LENGTH(N'mn.SpareParts', N'MaxStockLevel') IS NULL
+    ALTER TABLE [mn].[SpareParts] ADD MaxStockLevel INT NULL;
+GO
+
 IF OBJECT_ID(N'[mn].[InventoryAdjustment]', N'U') IS NULL
 BEGIN
     CREATE TABLE [mn].[InventoryAdjustment]

@@ -11,6 +11,7 @@ Public Class View_Inventory
         Public CategoryName As String
         Public Quantity As Integer
         Public UnitPrice As Decimal
+        Public ReorderLevel As Integer
     End Structure
 
     Private inventoryArray() As InventoryItem
@@ -60,6 +61,7 @@ Public Class View_Inventory
         txtSearch = ModernTheme.MakeTextBox()
         txtSearch.Location = New Point(12, 8)
         txtSearch.Width = 380
+        AddHandler txtSearch.TextChanged, AddressOf btnSearch_Click
         pnlSearch.Controls.Add(txtSearch)
 
         btnSearch = ModernTheme.MakePrimaryButton("Search")
@@ -123,6 +125,7 @@ Public Class View_Inventory
         dgvInventory.Columns.Add("Category", "Category")
         dgvInventory.Columns.Add("Quantity", "Stock")
         dgvInventory.Columns.Add("UnitPrice", "Price")
+        dgvInventory.Columns.Add("ReorderLevel", "Reorder at")
         dgvInventory.Columns("Description").FillWeight = 150
         dgvInventory.Columns("UnitPrice").DefaultCellStyle.Format = "C2"
         AddHandler dgvInventory.CellDoubleClick, AddressOf dgvInventory_CellDoubleClick
@@ -153,7 +156,7 @@ Public Class View_Inventory
         Dim itemsList As New List(Of InventoryItem)
         Try
             DBModule.OpenConnection()
-            Dim query As String = "SELECT s.Description, s.PartNumber, c.CategoryName, s.Quantity, s.UnitPrice FROM mn.SpareParts s JOIN mn.Category c ON s.CategoryID = c.CategoryID ORDER BY s.PartNumber"
+            Dim query As String = "SELECT s.Description, s.PartNumber, c.CategoryName, s.Quantity, s.UnitPrice, s.ReorderLevel FROM mn.SpareParts s JOIN mn.Category c ON s.CategoryID = c.CategoryID ORDER BY s.PartNumber"
             Using cmd As New SqlCommand(query, DBModule.Conn)
                 Using reader As SqlDataReader = cmd.ExecuteReader()
                     Do While reader.Read()
@@ -162,7 +165,8 @@ Public Class View_Inventory
                             .Description = reader("Description").ToString(),
                             .CategoryName = reader("CategoryName").ToString(),
                             .Quantity = CInt(reader("Quantity")),
-                            .UnitPrice = CDec(reader("UnitPrice"))
+                            .UnitPrice = CDec(reader("UnitPrice")),
+                            .ReorderLevel = CInt(reader("ReorderLevel"))
                         })
                     Loop
                 End Using
@@ -182,8 +186,15 @@ Public Class View_Inventory
 
     Private Sub DisplayInventory(items As InventoryItem())
         dgvInventory.Rows.Clear()
+        If items Is Nothing OrElse items.Length = 0 Then
+            dgvInventory.Rows.Add("No inventory items found", "", "", "", "", "")
+            Return
+        End If
         For Each item In items
-            dgvInventory.Rows.Add(item.Description, item.PartNumber, item.CategoryName, item.Quantity, item.UnitPrice)
+            Dim rowIndex = dgvInventory.Rows.Add(item.Description, item.PartNumber, item.CategoryName, item.Quantity, item.UnitPrice, item.ReorderLevel)
+            If item.Quantity <= item.ReorderLevel Then
+                dgvInventory.Rows(rowIndex).DefaultCellStyle.BackColor = Color.MistyRose
+            End If
         Next
     End Sub
 
@@ -243,22 +254,25 @@ Public Class View_Inventory
         Dim description As String = Convert.ToString(row.Cells("Description").Value).Trim()
         Dim quantity As Integer
         Dim unitPrice As Decimal
+        Dim reorderLevel As Integer
 
         If String.IsNullOrEmpty(description) OrElse
            Not Integer.TryParse(Convert.ToString(row.Cells("Quantity").Value), quantity) OrElse quantity < 0 OrElse
-           Not Decimal.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), unitPrice) OrElse unitPrice < 0 Then
-            MessageBox.Show("Enter a description, a non-negative quantity, and a non-negative price.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+           Not Decimal.TryParse(Convert.ToString(row.Cells("UnitPrice").Value), unitPrice) OrElse unitPrice < 0 OrElse
+           Not Integer.TryParse(Convert.ToString(row.Cells("ReorderLevel").Value), reorderLevel) OrElse reorderLevel < 0 Then
+            MessageBox.Show("Enter a description, non-negative quantity/price, and reorder level.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
         Try
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-                Const query As String = "UPDATE mn.SpareParts SET Description = @description, Quantity = @quantity, UnitPrice = @unitPrice WHERE PartNumber = @partNumber"
+                Const query As String = "UPDATE mn.SpareParts SET Description = @description, Quantity = @quantity, UnitPrice = @unitPrice, ReorderLevel = @reorderLevel WHERE PartNumber = @partNumber"
                 Using cmd As New SqlCommand(query, conn)
                     cmd.Parameters.AddWithValue("@description", description)
                     cmd.Parameters.AddWithValue("@quantity", quantity)
                     cmd.Parameters.AddWithValue("@unitPrice", unitPrice)
+                    cmd.Parameters.AddWithValue("@reorderLevel", reorderLevel)
                     cmd.Parameters.AddWithValue("@partNumber", partNumber)
                     cmd.ExecuteNonQuery()
                 End Using

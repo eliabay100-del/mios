@@ -122,7 +122,8 @@ sqlcmd -S ".\SQLEXPRESS" -E -C -d Inventory -i ".\reset_inventory_database.sql"
 
 - The active startup form is `LoginNew`.
 - The active user table is `mn.UUser`.
-- Passwords are stored as SHA-256 hashes by the current application.
+- New passwords use PBKDF2-SHA256 with per-password salts; legacy SHA-256
+	passwords are upgraded automatically after a successful login.
 - The project does not contain a Visual Studio solution migration or a database
 	backup. Back up the SQL Server database before using reset scripts.
 - The project is separate from the `pmas` application.

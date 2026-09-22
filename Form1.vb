@@ -237,7 +237,7 @@ Public Class Dashboard
                 conn.Open()
                 stats.StockOnHand = Convert.ToInt32(ExecuteScalar(conn, "SELECT ISNULL(SUM(Quantity), 0) FROM mn.SpareParts"))
                 stats.PurchaseBatches = Convert.ToInt32(ExecuteScalar(conn, "SELECT COUNT(*) FROM mn.PurchaseBatch"))
-                stats.LowInventory = Convert.ToInt32(ExecuteScalar(conn, "SELECT COUNT(*) FROM mn.SpareParts WHERE Quantity <= 5"))
+                stats.LowInventory = Convert.ToInt32(ExecuteScalar(conn, "SELECT COUNT(*) FROM mn.SpareParts WHERE Quantity <= ReorderLevel"))
                 stats.SalesToday = Convert.ToDecimal(ExecuteScalar(conn, "SELECT ISNULL(SUM(TotalAmount), 0) FROM mn.SalesInvoice WHERE CAST(InvoiceDate AS DATE) = CAST(GETDATE() AS DATE)"))
             End Using
         Catch ex As Exception

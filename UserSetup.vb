@@ -1,6 +1,4 @@
 ﻿Imports System.Data.SqlClient
-Imports System.Security.Cryptography
-Imports System.Text
 Imports System.Windows.Forms
 
 Module UserSetup
@@ -22,7 +20,7 @@ Module UserSetup
                 Dim userID As Integer
                 Using cmd As New SqlCommand("INSERT INTO mn.UUser (Username, PasswordHash) OUTPUT INSERTED.UserID VALUES (@u, @p)", con, transaction)
                     cmd.Parameters.AddWithValue("@u", username.Trim())
-                    cmd.Parameters.AddWithValue("@p", HashPassword(password))
+                    cmd.Parameters.AddWithValue("@p", SecurityService.HashPassword(password))
                     userID = Convert.ToInt32(cmd.ExecuteScalar())
                 End Using
 
@@ -40,11 +38,4 @@ Module UserSetup
         MessageBox.Show("Initial user created: nati")
     End Sub
 
-    Private Function HashPassword(password As String) As String
-        Using sha256 As SHA256 = SHA256.Create()
-            Dim bytes() As Byte = Encoding.UTF8.GetBytes(password)
-            Dim hash() As Byte = sha256.ComputeHash(bytes)
-            Return Convert.ToBase64String(hash)
-        End Using
-    End Function
 End Module

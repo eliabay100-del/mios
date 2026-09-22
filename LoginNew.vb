@@ -1,6 +1,4 @@
 ﻿Imports System.Data.SqlClient
-Imports System.Security.Cryptography
-Imports System.Text
 Imports System.Windows.Forms
 Imports System.Drawing
 
@@ -86,8 +84,6 @@ Public Class LoginNew
         End If
 
         Dim usernameInput As String = txtUsername.Text.Trim()
-        Dim passwordHash As String = HashPassword(txtPassword.Text)
-
         Try
             Using con As New SqlConnection(connectionString)
                 con.Open()
@@ -96,7 +92,12 @@ Public Class LoginNew
                     Using reader = cmd.ExecuteReader()
                         If reader.Read() Then
                             Dim storedHash = reader("PasswordHash").ToString()
-                            If storedHash = passwordHash Then
+                            Dim passwordValid As Boolean = SecurityService.VerifyPassword(txtPassword.Text, storedHash)
+                            If Not passwordValid AndAlso SecurityService.IsLegacyHash(storedHash) Then
+                                passwordValid = SecurityService.VerifyLegacySha256(txtPassword.Text, storedHash)
+                                If passwordValid Then MigratePasswordHash(UserID, txtPassword.Text)
+                            End If
+                            If passwordValid Then
                                 ' Login success
                                 LoginSuccessful = True
                                 UserID = Convert.ToInt32(reader("UserID"))
@@ -126,11 +127,14 @@ Public Class LoginNew
         End Try
     End Sub
 
-    Private Function HashPassword(password As String) As String
-        Using sha256 As SHA256 = SHA256.Create()
-            Dim bytes = Encoding.UTF8.GetBytes(password)
-            Dim hash = sha256.ComputeHash(bytes)
-            Return Convert.ToBase64String(hash)
+    Private Sub MigratePasswordHash(userID As Integer, password As String)
+        Using connection As New SqlConnection(connectionString)
+            connection.Open()
+            Using cmd As New SqlCommand("UPDATE mn.UUser SET PasswordHash = @hash WHERE UserID = @userID", connection)
+                cmd.Parameters.AddWithValue("@hash", SecurityService.HashPassword(password))
+                cmd.Parameters.AddWithValue("@userID", userID)
+                cmd.ExecuteNonQuery()
+            End Using
         End Using
-    End Function
+    End Sub
 End Class

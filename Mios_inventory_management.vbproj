@@ -177,6 +177,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="SecurityContext.vb" />
+    <Compile Include="SecurityService.vb" />
     <Compile Include="Theme.vb" />
     <Compile Include="UserSetup.vb" />
     <Compile Include="View_Inventory.Designer.vb">

@@ -79,6 +79,8 @@ BEGIN
         SupplierID INT NULL,
         Quantity INT NOT NULL CONSTRAINT CK_SpareParts_Quantity CHECK (Quantity >= 0),
         UnitPrice DECIMAL(18,2) NOT NULL CONSTRAINT CK_SpareParts_UnitPrice CHECK (UnitPrice >= 0),
+        ReorderLevel INT NOT NULL CONSTRAINT DF_SpareParts_ReorderLevel DEFAULT 5,
+        MaxStockLevel INT NULL,
         CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_SpareParts_CreatedAt DEFAULT SYSDATETIME(),
         CONSTRAINT FK_SpareParts_Category FOREIGN KEY (CategoryID) REFERENCES [mn].[Category](CategoryID),
         CONSTRAINT FK_SpareParts_Condition FOREIGN KEY (ConditionID) REFERENCES [mn].[Condition](ConditionID),
