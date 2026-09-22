@@ -109,8 +109,7 @@ Public Class UserManagementForm
                     Dim userID As Integer
                     Using cmd As New SqlCommand("INSERT INTO mn.UUser (Username, PasswordHash) OUTPUT INSERTED.UserID VALUES (@username, @hash)", conn, transaction)
                         cmd.Parameters.AddWithValue("@username", txtUsername.Text.Trim())
-                        cmd.Parameters.AddWithValue("@hash", HashPassword(txtPassword.Text))
-                            cmd.Parameters.AddWithValue("@hash", SecurityService.HashPassword(txtPassword.Text))
+                        cmd.Parameters.AddWithValue("@hash", SecurityService.HashPassword(txtPassword.Text))
                         userID = Convert.ToInt32(cmd.ExecuteScalar())
                     End Using
                     Using cmd As New SqlCommand("INSERT INTO mn.UserRole (UserID, RoleID) SELECT @userID, RoleID FROM mn.Role WHERE RoleName = @role", conn, transaction)
