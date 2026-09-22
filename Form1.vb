@@ -174,6 +174,9 @@ Public Class Dashboard
                 form.ShowDialog()
             End Using
         End Sub)
+        AddDashboardAction("Manage Categories", 30, 610, SecurityContext.HasRole("Admin"), Sub()
+            OpenDialog(Function() New CategoryManagementForm())
+        End Sub)
         AddDashboardAction("Adjust Stock", 185, 610, SecurityContext.HasPermission("INVENTORY_ADJUST"), Sub()
             Using form As New InventoryAdjustmentForm()
                 form.ShowDialog()
