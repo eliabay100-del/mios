@@ -33,6 +33,7 @@ Public Class LoginNew
             Color.FromArgb(225, 228, 235),
             Drawing2D.LinearGradientMode.Vertical)
         Me.BackgroundImage = gradientBrush
+        Me.BackgroundImageLayout = ImageLayout.Stretch
 
         ' Create card panel for consistent layout
         cardPanel = ModernTheme.CreateCardPanel()
@@ -68,12 +69,12 @@ Public Class LoginNew
         ' Username label
         lblUsername = New Label With {
             .Text = "Username",
-            .Font = New Font("Segoe UI", 10.5F, FontStyle.SemiBold),
+            .Font = New Font("Segoe UI", 10.5F, FontStyle.Bold),
             .ForeColor = Color.FromArgb(60, 60, 60),
             .AutoSize = False,
             .Size = New Size(260, 24),
             .Location = New Point(20, 100),
-            .BackColor = Color.Transparent
+            .BackColor = ModernTheme.Surface
         }
         cardPanel.Controls.Add(lblUsername)
         
@@ -91,12 +92,12 @@ Public Class LoginNew
         ' Password label
         lblPassword = New Label With {
             .Text = "Password",
-            .Font = New Font("Segoe UI", 10.5F, FontStyle.SemiBold),
+            .Font = New Font("Segoe UI", 10.5F, FontStyle.Bold),
             .ForeColor = Color.FromArgb(60, 60, 60),
             .AutoSize = False,
             .Size = New Size(260, 24),
             .Location = New Point(20, 182),
-            .BackColor = Color.Transparent
+            .BackColor = ModernTheme.Surface
         }
         cardPanel.Controls.Add(lblPassword)
         
@@ -119,7 +120,7 @@ Public Class LoginNew
             .AutoSize = False,
             .Size = New Size(260, 22),
             .Location = New Point(20, 264),
-            .BackColor = Color.Transparent,
+            .BackColor = ModernTheme.Surface,
             .TextAlign = ContentAlignment.MiddleLeft
         }
         cardPanel.Controls.Add(lblError)
