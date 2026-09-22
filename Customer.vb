@@ -28,6 +28,7 @@ Public Class Customer
     Public Sub New()
         ModernTheme.ApplyWindowTheme(Me)
         SetupForm()
+        InitializeComponent()
     End Sub
 
     Private Sub Customer_Load(sender As Object, e As EventArgs) Handles MyBase.Load

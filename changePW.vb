@@ -32,6 +32,7 @@ Public Class ChangePW
         Me.MaximizeBox = False
         Me.MinimizeBox = False
 
+        InitializeComponent()
         InitializeControls()
     End Sub
 

@@ -24,6 +24,7 @@ Public Class Dashboard
         Me.ControlBox = True
         Me.WindowState = FormWindowState.Maximized
 
+        InitializeComponent()
         InitializeDashboard()
         ModernTheme.EnableVerticalScroll(Me, 1000)
     End Sub

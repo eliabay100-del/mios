@@ -26,13 +26,20 @@ Public Class LoginNew
         Me.Size = New Size(400, 520)
         Me.MinimumSize = New Size(400, 520)
         
-        ' Apply gradient background
-        Dim gradientBrush As New Drawing2D.LinearGradientBrush(
-            Me.ClientRectangle,
-            Color.FromArgb(240, 242, 245),
-            Color.FromArgb(225, 228, 235),
-            Drawing2D.LinearGradientMode.Vertical)
-        Me.BackgroundImage = gradientBrush
+        InitializeComponent()
+        
+        ' Apply gradient background by creating a bitmap
+        Dim gradientBitmap As New Bitmap(Me.Width, Me.Height)
+        Using g As Graphics = Graphics.FromImage(gradientBitmap)
+            Using gradientBrush As New Drawing2D.LinearGradientBrush(
+                New Point(0, 0),
+                New Point(0, Me.Height),
+                Color.FromArgb(240, 242, 245),
+                Color.FromArgb(225, 228, 235))
+                g.FillRectangle(gradientBrush, 0, 0, Me.Width, Me.Height)
+            End Using
+        End Using
+        Me.BackgroundImage = gradientBitmap
         Me.BackgroundImageLayout = ImageLayout.Stretch
 
         ' Create card panel for consistent layout

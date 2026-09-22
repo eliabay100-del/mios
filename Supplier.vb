@@ -48,6 +48,8 @@ Public Class Supplier
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         ModernTheme.EnableVerticalScroll(Me, 760)
+        
+        InitializeComponent()
         InitializeSupplierForm()
     End Sub
 

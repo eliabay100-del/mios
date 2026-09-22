@@ -118,7 +118,7 @@ Partial Class Dashboard
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi
-        Me.ClientSize = New System.Drawing.Size(780, 450)
+        Me.ClientSize = New System.Drawing.Size(1180, 820)
         Me.Controls.Add(Me.btnExit)
         Me.Controls.Add(Me.btnCustomer)
         Me.Controls.Add(Me.btnSupplier)
@@ -129,7 +129,7 @@ Partial Class Dashboard
         Me.Controls.Add(Me.btnIssuePart)
         Me.Controls.Add(Me.btnAddPart)
         Me.Name = "Dashboard"
-        Me.Text = "DASHBOARD PAGE"
+        Me.Text = "MIOS Inventory Management"
         Me.ResumeLayout(False)
 
     End Sub

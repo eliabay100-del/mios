@@ -28,9 +28,9 @@ Partial Class LoginNew
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi
-        Me.ClientSize = New System.Drawing.Size(800, 450)
+        Me.ClientSize = New System.Drawing.Size(400, 520)
         Me.Name = "LoginNew"
-        Me.Text = "LoginNew"
+        Me.Text = "Login"
         Me.ResumeLayout(False)
 
     End Sub

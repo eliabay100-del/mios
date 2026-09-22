@@ -1,1 +1,29 @@
-Nothing should be ignored based on the provided file changes. The only modified file is 'LoginNew.vb', which is a source code file and should not be added to .gitignore.
+```
+# Visual Basic build artifacts
+*.Designer.vb
+*.vbproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Compiled files
+*.exe
+*.dll
+*.pdb
+*.vshost.*
+*.deploy
+*.msi
+*.msp
+*.appx
+*.appxbundle
+
+# Dependencies
+packages/
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+```

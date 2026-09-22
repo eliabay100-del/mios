@@ -29,6 +29,7 @@ Public Class Login
         Me.MinimizeBox = False
         Me.ControlBox = False
 
+        InitializeComponent()
         InitializeComponents()
     End Sub
 

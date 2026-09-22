@@ -28,9 +28,9 @@ Partial Class Supplier
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi
-        Me.ClientSize = New System.Drawing.Size(800, 450)
+        Me.ClientSize = New System.Drawing.Size(1120, 680)
         Me.Name = "Supplier"
-        Me.Text = "Supplier"
+        Me.Text = "Supplier Management"
         Me.ResumeLayout(False)
 
     End Sub
