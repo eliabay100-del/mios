@@ -1,55 +1,40 @@
-```
-# Visual Basic/MSBuild artifacts
-*.obj
+```vb
+# Visual Basic build outputs
 *.exe
 *.dll
 *.pdb
+*.xml
+*.manifest
+*.config
+*.settings
 *.user
-*.userosscache
 *.suo
-*.userprefs
-*.cache
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp
 *.log
 
-# Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-build/
-dist/
-[Bb]in/
-[Oo]bj/
-
-# Dependencies
-packages/
-node_modules/
-vendor/
-
-# IDE specific
-.vs/
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Environment
+# Environment files
 .env
 .env.local
 *.env.*
-
-# Logs
-*.log
 
 # OS generated files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Temporary files
-*.tmp
-*.temp
-*.bak
+# Build directories
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
 ```

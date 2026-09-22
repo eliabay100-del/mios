@@ -26,6 +26,7 @@ Public Class Customer
     Private lblTitle As Label
 
     Public Sub New()
+        InitializeComponent()
         ModernTheme.ApplyWindowTheme(Me)
         SetupForm()
     End Sub

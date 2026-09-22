@@ -24,6 +24,7 @@ Public Class ChangePW
     Public Property Username As String = ""
 
     Public Sub New()
+        InitializeComponent()
         ' Form settings
         Me.Text = "Change Password"
         Me.Size = New Size(400, 300)

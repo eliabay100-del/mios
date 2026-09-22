@@ -17,6 +17,7 @@ Public Class LoginNew
     Public Property Username As String = ""
 
     Public Sub New()
+        InitializeComponent()
         ' Form settings
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Login - Inventory System"

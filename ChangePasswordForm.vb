@@ -12,6 +12,7 @@ Public Class ChangePasswordForm
     Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
 
     Public Sub New()
+        InitializeComponent()
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Change Password"
         Me.Size = New Size(520, 440)
