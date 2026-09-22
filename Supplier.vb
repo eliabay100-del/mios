@@ -40,6 +40,7 @@ Public Class Supplier
     Private lblSearchLabel As Label
 
     Public Sub New()
+        InitializeComponent()
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Supplier Management"
         Me.Size = New Size(1120, 680)

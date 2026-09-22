@@ -13,6 +13,7 @@ Public Class Dashboard
     Private btnLanguage As Button
 
     Public Sub New()
+        InitializeComponent()
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "MIOS Inventory Management"
         Me.Size = New Size(1180, 820)

@@ -20,6 +20,7 @@ Public Class Login
     Public Property UserID As Integer = 0
 
     Public Sub New()
+        InitializeComponent()
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Login - Inventory System"
         Me.Size = New Size(1000, 620)
