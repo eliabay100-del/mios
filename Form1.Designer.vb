@@ -117,7 +117,7 @@ Partial Class Dashboard
         'Dashboard
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
-        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None
         Me.ClientSize = New System.Drawing.Size(780, 450)
         Me.Controls.Add(Me.btnExit)
         Me.Controls.Add(Me.btnCustomer)
