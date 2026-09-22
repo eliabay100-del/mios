@@ -53,9 +53,10 @@ Public Module ModernTheme
         If Math.Abs(scale - 1.0F) < 0.01F Then Return
 
         ' Scale fonts as well as geometry so explicit runtime-created fonts
-        ' remain proportional at 125%, 150%, 175%, etc.
+        ' remain proportional at 125%, 150%, 175%, etc. Inherited fonts are
+        ' tracked so they are not accidentally scaled more than once.
+        ScaleControlTree(form, scale, form.Font)
         form.Font = ScaleFont(form.Font, scale)
-        ScaleControlTree(form, scale)
 
         If form.WindowState <> FormWindowState.Maximized Then
             form.Size = ScaleSize(form.Size, scale)
@@ -74,7 +75,7 @@ Public Module ModernTheme
         End If
     End Sub
 
-    Private Sub ScaleControlTree(parent As Control, scale As Single)
+    Private Sub ScaleControlTree(parent As Control, scale As Single, inheritedFont As Font)
         For Each child As Control In parent.Controls
             child.Location = ScalePoint(child.Location, scale)
 
@@ -84,7 +85,13 @@ Public Module ModernTheme
 
             child.Padding = ScalePadding(child.Padding, scale)
             child.Margin = ScalePadding(child.Margin, scale)
-            child.Font = ScaleFont(child.Font, scale)
+
+            Dim originalFont As Font = child.Font
+            If originalFont.Equals(inheritedFont) Then
+                child.Font = ScaleFont(inheritedFont, scale)
+            Else
+                child.Font = ScaleFont(originalFont, scale)
+            End If
 
             If child.MinimumSize.Width > 0 OrElse child.MinimumSize.Height > 0 Then
                 child.MinimumSize = ScaleSize(child.MinimumSize, scale)
@@ -109,7 +116,7 @@ Public Module ModernTheme
                 Next
             End If
 
-            ScaleControlTree(child, scale)
+            ScaleControlTree(child, scale, originalFont)
         Next
     End Sub
 
