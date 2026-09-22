@@ -56,7 +56,7 @@ Public Class Dashboard
         Dim userChip As New Panel With {
             .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Location = New Point(Me.Width - 208, 48),
+            .Location = New Point(900, 48),
             .BackColor = ModernTheme.SurfaceAlt,
             .BorderStyle = BorderStyle.None,
             .Padding = New Padding(16, 11, 16, 11),
@@ -70,23 +70,19 @@ Public Class Dashboard
             .Dock = DockStyle.Fill
         }
         userChip.Controls.Add(userText)
-        pnlHeader.Controls.Add(userChip)
 
         Dim btnHeaderExit As Button = ModernTheme.MakeSecondaryButton("Exit")
-        btnHeaderExit.Location = New Point(userChip.Left - 120, 48)
-        btnHeaderExit.Size = New Size(110, 42)
-        btnHeaderExit.ForeColor = ModernTheme.Danger
         AddHandler btnHeaderExit.Click, AddressOf btnExit_Click
-        pnlHeader.Controls.Add(btnHeaderExit)
+        userChip.Controls.Add(btnHeaderExit)
 
         btnLanguage = ModernTheme.MakeSecondaryButton("አማርኛ")
-        btnLanguage.Location = New Point(btnHeaderExit.Left - 120, 48)
-        btnLanguage.Size = New Size(110, 42)
         AddHandler btnLanguage.Click, Sub(sender, e)
                                         LanguageService.Toggle()
                                         btnLanguage.Text = If(LanguageService.IsAmharic, "English", "አማርኛ")
                                     End Sub
-        pnlHeader.Controls.Add(btnLanguage)
+        userChip.Controls.Add(btnLanguage)
+        
+        pnlHeader.Controls.Add(userChip)
         Me.Controls.Add(pnlHeader)
 
         pnlQuickActions = New Panel With {
@@ -299,14 +295,16 @@ Public Class Dashboard
             .MinimumSize = New Size(200, 0)
         }
 
-        Dim lblTitle As New Label With {
-            .Text = title,
-            .ForeColor = ModernTheme.MutedText,
-            .Font = New Font("Segoe UI", 10.0F),
+        ' Add labels in reverse order so DockStyle.Top stacks them correctly (title on top, value in middle, note at bottom)
+        Dim lblNote As New Label With {
+            .Text = note,
+            .ForeColor = ModernTheme.Success,
+            .Font = New Font("Segoe UI", 9.0F),
             .AutoSize = True,
+            .Margin = New Padding(0, 8, 0, 16),
             .Dock = DockStyle.Top
         }
-        card.Controls.Add(lblTitle)
+        card.Controls.Add(lblNote)
 
         Dim lblValue As New Label With {
             .Text = value,
@@ -318,15 +316,15 @@ Public Class Dashboard
         }
         card.Controls.Add(lblValue)
 
-        Dim lblNote As New Label With {
-            .Text = note,
-            .ForeColor = ModernTheme.Success,
-            .Font = New Font("Segoe UI", 9.0F),
+        Dim lblTitle As New Label With {
+            .Text = title,
+            .ForeColor = ModernTheme.MutedText,
+            .Font = New Font("Segoe UI", 10.0F),
             .AutoSize = True,
-            .Margin = New Padding(0, 8, 0, 16),
             .Dock = DockStyle.Top
         }
-        card.Controls.Add(lblNote)
+        card.Controls.Add(lblTitle)
+
         Return card
     End Function
 

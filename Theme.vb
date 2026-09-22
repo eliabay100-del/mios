@@ -10,6 +10,7 @@ Public Module ModernTheme
     Public Const SectionGap As Integer = 32
     Public Const CardPadding As Integer = 16
     Public Const CardBorderRadius As Integer = 8
+    Public Const LabelHeight As Integer = 22
     
     Public ReadOnly PageBackground As Color = Color.FromArgb(245, 243, 239)
     Public ReadOnly Surface As Color = Color.FromArgb(255, 255, 255)
@@ -124,6 +125,11 @@ Public Module ModernTheme
             path.CloseFigure()
             button.Region = New Region(path)
         End Using
+    End Sub
+
+    Public Sub ApplyRoundButton(button As Button)
+        AddHandler button.Resize, Sub(s, e) RoundButton(button)
+        RoundButton(button)
     End Sub
 
     Public Function MakeTextBox() As TextBox

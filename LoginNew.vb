@@ -22,23 +22,22 @@ Public Class LoginNew
     Public Sub New()
         ' Form settings
         ModernTheme.ApplyWindowTheme(Me)
-        Me.Text = "Login - Inventory System"
-        Me.Size = New Size(450, 320)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
 
         ' Create card panel for consistent layout
         cardPanel = ModernTheme.CreateCardPanel()
         cardPanel.Location = New Point(ModernTheme.FormPadding, ModernTheme.FormPadding)
-        cardPanel.Size = New Size(Me.ClientSize.Width - (2 * ModernTheme.FormPadding), 220)
+        cardPanel.Width = 320 ' Fixed width matching original design (400 - 2*FormPadding)
 
-        ' Initialize controls with consistent spacing
+        ' Initialize controls with consistent spacing matching original design
         Dim yPos As Integer = 0
         
         lblUsername = New Label With {
             .Text = "Username:",
             .Location = New Point(0, yPos),
             .AutoSize = True,
+            .BackColor = ModernTheme.Surface,
             .ForeColor = ModernTheme.PrimaryText
         }
         cardPanel.Controls.Add(lblUsername)
@@ -46,7 +45,7 @@ Public Class LoginNew
         yPos = lblUsername.Bottom + ModernTheme.LabelToInputGap
         txtUsername = ModernTheme.MakeTextBox()
         txtUsername.Location = New Point(0, yPos)
-        txtUsername.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 42)
+        txtUsername.Size = New Size(200, 25) ' Original size
         cardPanel.Controls.Add(txtUsername)
         
         yPos = txtUsername.Bottom + ModernTheme.FieldSpacing
@@ -54,6 +53,7 @@ Public Class LoginNew
             .Text = "Password:",
             .Location = New Point(0, yPos),
             .AutoSize = True,
+            .BackColor = ModernTheme.Surface,
             .ForeColor = ModernTheme.PrimaryText
         }
         cardPanel.Controls.Add(lblPassword)
@@ -61,7 +61,7 @@ Public Class LoginNew
         yPos = lblPassword.Bottom + ModernTheme.LabelToInputGap
         txtPassword = ModernTheme.MakeTextBox()
         txtPassword.Location = New Point(0, yPos)
-        txtPassword.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 42)
+        txtPassword.Size = New Size(200, 25) ' Original size
         txtPassword.PasswordChar = "*"c
         cardPanel.Controls.Add(txtPassword)
         
@@ -70,15 +70,22 @@ Public Class LoginNew
             .ForeColor = ModernTheme.Danger,
             .Location = New Point(0, yPos),
             .AutoSize = True,
-            .MaximumSize = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 0)
+            .BackColor = ModernTheme.Surface,
+            .MaximumSize = New Size(300, 0),
+            .Size = New Size(300, 20) ' Original size
         }
         cardPanel.Controls.Add(lblError)
         
         yPos = lblError.Bottom + ModernTheme.FieldSpacing
         btnLogin = ModernTheme.MakePrimaryButton("Login")
         btnLogin.Location = New Point(0, yPos)
-        btnLogin.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 40)
+        btnLogin.Size = New Size(80, 30) ' Original size
+        ModernTheme.ApplyRoundButton(btnLogin)
         cardPanel.Controls.Add(btnLogin)
+
+        ' Size cardPanel and form to fit content exactly
+        cardPanel.Height = yPos + btnLogin.Height + ModernTheme.CardPadding
+        Me.ClientSize = New Size(cardPanel.Width + (2 * ModernTheme.FormPadding), cardPanel.Height + (2 * ModernTheme.FormPadding))
 
         ' Add card panel to form
         Me.Controls.Add(cardPanel)
