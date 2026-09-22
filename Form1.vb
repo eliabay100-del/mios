@@ -56,10 +56,9 @@ Public Class Dashboard
 
         Dim userChip As New Panel With {
             .Size = New Size(168, 42),
-            .Location = New Point(Math.Max(30, pnlHeader.ClientSize.Width - 208), 48),
+            .Location = New Point(Me.Width - 208, 48),
             .BackColor = ModernTheme.SurfaceAlt,
-            .BorderStyle = BorderStyle.None,
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Right
+            .BorderStyle = BorderStyle.None
         }
         Dim userText As New Label With {
             .Text = If(String.IsNullOrEmpty(Username), "Admin User", Username) & "  /  " & If(String.IsNullOrEmpty(SecurityContext.CurrentRole), "User", SecurityContext.CurrentRole),
@@ -72,17 +71,15 @@ Public Class Dashboard
         pnlHeader.Controls.Add(userChip)
 
         Dim btnHeaderExit As Button = ModernTheme.MakeSecondaryButton("Exit")
-        btnHeaderExit.Location = New Point(Math.Max(30, pnlHeader.ClientSize.Width - 328), 48)
+        btnHeaderExit.Location = New Point(820, 48)
         btnHeaderExit.Size = New Size(110, 42)
-        btnHeaderExit.Anchor = AnchorStyles.Top Or AnchorStyles.Right
         btnHeaderExit.ForeColor = ModernTheme.Danger
         AddHandler btnHeaderExit.Click, AddressOf btnExit_Click
         pnlHeader.Controls.Add(btnHeaderExit)
 
         btnLanguage = ModernTheme.MakeSecondaryButton("አማርኛ")
-        btnLanguage.Location = New Point(Math.Max(30, pnlHeader.ClientSize.Width - 448), 48)
+        btnLanguage.Location = New Point(700, 48)
         btnLanguage.Size = New Size(110, 42)
-        btnLanguage.Anchor = AnchorStyles.Top Or AnchorStyles.Right
         AddHandler btnLanguage.Click, Sub(sender, e)
                                         LanguageService.Toggle()
                                         btnLanguage.Text = If(LanguageService.IsAmharic, "English", "አማርኛ")
