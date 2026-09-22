@@ -47,9 +47,9 @@
   <PropertyGroup>
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-  </ItemGroup>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />

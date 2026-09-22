@@ -1,28 +1,41 @@
 ```
-# Visual Studio/Visual Basic build artifacts
+# Visual Basic/MSBuild artifacts
 *.obj
 *.exe
 *.dll
 *.pdb
+*.user
+*.userosscache
+*.suo
 *.userprefs
 *.cache
 *.log
-*.tmp
 
-# Visual Studio/Visual Basic intermediate files
-Debug/
-Release/
-bin/
-obj/
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+dist/
+[Bb]in/
+[Oo]bj/
 
-# Visual Studio Code
+# Dependencies
+packages/
+node_modules/
+vendor/
+
+# IDE specific
+.vs/
 .vscode/
+.idea/
+*.swp
+*.swo
 
-# Windows system files
-Thumbs.db
-Desktop.ini
-
-# Environment files
+# Environment
 .env
 .env.local
 *.env.*
@@ -30,7 +43,13 @@ Desktop.ini
 # Logs
 *.log
 
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
 # Temporary files
 *.tmp
-*~
+*.temp
+*.bak
 ```
