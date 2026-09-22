@@ -22,7 +22,7 @@ Public Class Dashboard
         Me.ControlBox = False
 
         InitializeDashboard()
-        ModernTheme.EnableVerticalScroll(Me, 820)
+        ModernTheme.EnableVerticalScroll(Me, 1000)
     End Sub
 
     Private Sub InitializeDashboard()
@@ -69,7 +69,7 @@ Public Class Dashboard
 
         pnlQuickActions = New Panel With {
             .Location = New Point(30, 170),
-            .Size = New Size(1100, 760),
+            .Size = New Size(1100, 790),
             .BackColor = Color.Transparent
         }
 
@@ -148,7 +148,7 @@ Public Class Dashboard
 
         pnlAdminActions = New FlowLayoutPanel With {
             .Location = New Point(0, 640),
-            .Size = New Size(1040, 115),
+            .Size = New Size(1040, 135),
             .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = True,
             .BackColor = Color.Transparent,
@@ -199,8 +199,10 @@ Public Class Dashboard
 
     Private Sub AddDashboardAction(text As String, x As Integer, y As Integer, visible As Boolean, action As Action)
         Dim button As Button = ModernTheme.MakeSecondaryButton(text)
-        button.Width = 145
-        button.Height = 38
+        button.Width = 180
+        button.Height = 42
+        button.AutoEllipsis = False
+        button.Padding = New Padding(8, 4, 8, 4)
         button.Visible = visible
         AddHandler button.Click, Sub(sender, e)
                                     Try
@@ -267,7 +269,8 @@ Public Class Dashboard
             .BackColor = Color.White,
             .Padding = New Padding(16),
             .Height = 110,
-            .Margin = New Padding(8)
+            .Margin = New Padding(8),
+            .Dock = DockStyle.Fill
         }
 
         Dim lblTitle As New Label With {
