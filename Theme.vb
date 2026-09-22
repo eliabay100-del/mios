@@ -20,11 +20,117 @@ Public Module ModernTheme
         form.BackColor = PageBackground
         form.ForeColor = PrimaryText
         form.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular)
+
+        ' MIOS builds much of its UI in code rather than through the WinForms designer.
+        ' Keep WinForms font scaling from fighting the explicit DPI layout scaling below.
+        form.AutoScaleMode = AutoScaleMode.None
         form.AutoScroll = True
         form.AutoScrollMinSize = New Size(0, form.ClientSize.Height + 1)
-        AddHandler form.Shown, Sub(sender, e) StyleButtons(form)
+
+        AddHandler form.Shown, Sub(sender, e)
+                                    StyleButtons(form)
+                                    ScaleForCurrentDpi(form)
+                                End Sub
         AddHandler LanguageService.LanguageChanged, Sub(sender, e) LanguageService.ApplyTo(form)
     End Sub
+
+    ''' <summary>
+    ''' Scales the complete runtime-created layout from the 96-DPI design baseline.
+    ''' This is important because MIOS creates many controls after InitializeComponent().
+    ''' </summary>
+    Public Sub ScaleForCurrentDpi(form As Form)
+        Dim dpi As Single = 96.0F
+
+        Try
+            Using graphics As Graphics = form.CreateGraphics()
+                dpi = graphics.DpiX
+            End Using
+        Catch
+            Return
+        End Try
+
+        Dim scale As Single = dpi / 96.0F
+        If Math.Abs(scale - 1.0F) < 0.01F Then Return
+
+        ScaleControlTree(form, scale)
+
+        If form.WindowState <> FormWindowState.Maximized Then
+            form.Size = ScaleSize(form.Size, scale)
+        End If
+
+        If form.MinimumSize.Width > 0 OrElse form.MinimumSize.Height > 0 Then
+            form.MinimumSize = ScaleSize(form.MinimumSize, scale)
+        End If
+
+        If form.MaximumSize.Width > 0 OrElse form.MaximumSize.Height > 0 Then
+            form.MaximumSize = ScaleSize(form.MaximumSize, scale)
+        End If
+
+        If form.AutoScroll Then
+            form.AutoScrollMinSize = ScaleSize(form.AutoScrollMinSize, scale)
+        End If
+    End Sub
+
+    Private Sub ScaleControlTree(parent As Control, scale As Single)
+        For Each child As Control In parent.Controls
+            child.Location = ScalePoint(child.Location, scale)
+
+            If Not child.AutoSize Then
+                child.Size = ScaleSize(child.Size, scale)
+            End If
+
+            child.Padding = ScalePadding(child.Padding, scale)
+            child.Margin = ScalePadding(child.Margin, scale)
+
+            If child.MinimumSize.Width > 0 OrElse child.MinimumSize.Height > 0 Then
+                child.MinimumSize = ScaleSize(child.MinimumSize, scale)
+            End If
+
+            If child.MaximumSize.Width > 0 OrElse child.MaximumSize.Height > 0 Then
+                child.MaximumSize = ScaleSize(child.MaximumSize, scale)
+            End If
+
+            Dim table = TryCast(child, TableLayoutPanel)
+            If table IsNot Nothing Then
+                For Each style As ColumnStyle In table.ColumnStyles
+                    If style.SizeType = SizeType.Absolute Then
+                        style.Width *= scale
+                    End If
+                Next
+
+                For Each style As RowStyle In table.RowStyles
+                    If style.SizeType = SizeType.Absolute Then
+                        style.Height *= scale
+                    End If
+                Next
+            End If
+
+            ScaleControlTree(child, scale)
+        Next
+    End Sub
+
+    Private Function ScalePoint(value As Point, scale As Single) As Point
+        Return New Point(
+            CInt(Math.Round(value.X * scale)),
+            CInt(Math.Round(value.Y * scale))
+        )
+    End Function
+
+    Private Function ScaleSize(value As Size, scale As Single) As Size
+        Return New Size(
+            Math.Max(0, CInt(Math.Round(value.Width * scale))),
+            Math.Max(0, CInt(Math.Round(value.Height * scale)))
+        )
+    End Function
+
+    Private Function ScalePadding(value As Padding, scale As Single) As Padding
+        Return New Padding(
+            Math.Max(0, CInt(Math.Round(value.Left * scale))),
+            Math.Max(0, CInt(Math.Round(value.Top * scale))),
+            Math.Max(0, CInt(Math.Round(value.Right * scale))),
+            Math.Max(0, CInt(Math.Round(value.Bottom * scale)))
+        )
+    End Function
 
     Public Sub EnableVerticalScroll(form As Form, contentHeight As Integer)
         form.AutoScroll = True
