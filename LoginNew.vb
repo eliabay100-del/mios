@@ -21,79 +21,131 @@ Public Class LoginNew
 
     Public Sub New()
         ' Form settings
-        ModernTheme.ApplyWindowTheme(Me)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
+        Me.FormBorderStyle = FormBorderStyle.None
+        Me.Size = New Size(400, 520)
+        Me.MinimumSize = New Size(400, 520)
+        
+        ' Apply gradient background
+        Dim gradientBrush As New Drawing2D.LinearGradientBrush(
+            Me.ClientRectangle,
+            Color.FromArgb(240, 242, 245),
+            Color.FromArgb(225, 228, 235),
+            Drawing2D.LinearGradientMode.Vertical)
+        Me.BackgroundImage = gradientBrush
 
         ' Create card panel for consistent layout
         cardPanel = ModernTheme.CreateCardPanel()
-        cardPanel.Location = New Point(ModernTheme.FormPadding, ModernTheme.FormPadding)
-        cardPanel.Width = 320 ' Fixed width matching original design (400 - 2*FormPadding)
+        cardPanel.Location = New Point(50, 90)
+        cardPanel.Size = New Size(300, 360)
+        cardPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
+        Me.Controls.Add(cardPanel)
 
-        ' Initialize controls with consistent spacing matching original design
-        Dim yPos As Integer = 0
-        
-        lblUsername = New Label With {
-            .Text = "Username:",
-            .Location = New Point(0, yPos),
+        ' Title label
+        Dim lblTitle As New Label With {
+            .Text = "Welcome Back",
+            .Font = New Font("Segoe UI", 18.0F, FontStyle.Bold),
+            .ForeColor = Color.FromArgb(30, 30, 30),
             .AutoSize = True,
-            .BackColor = ModernTheme.Surface,
-            .ForeColor = ModernTheme.PrimaryText
+            .Location = New Point((cardPanel.Width - 130) \ 2, 25),
+            .BackColor = Color.Transparent,
+            .TextAlign = ContentAlignment.MiddleCenter
+        }
+        cardPanel.Controls.Add(lblTitle)
+        
+        ' Subtitle label
+        Dim lblSubtitle As New Label With {
+            .Text = "Please sign in to continue",
+            .Font = New Font("Segoe UI", 9.5F, FontStyle.Regular),
+            .ForeColor = Color.FromArgb(100, 100, 100),
+            .AutoSize = True,
+            .Location = New Point((cardPanel.Width - 150) \ 2, 58),
+            .BackColor = Color.Transparent,
+            .TextAlign = ContentAlignment.MiddleCenter
+        }
+        cardPanel.Controls.Add(lblSubtitle)
+
+        ' Username label
+        lblUsername = New Label With {
+            .Text = "Username",
+            .Font = New Font("Segoe UI", 10.5F, FontStyle.SemiBold),
+            .ForeColor = Color.FromArgb(60, 60, 60),
+            .AutoSize = False,
+            .Size = New Size(260, 24),
+            .Location = New Point(20, 100),
+            .BackColor = Color.Transparent
         }
         cardPanel.Controls.Add(lblUsername)
         
-        yPos = lblUsername.Bottom + ModernTheme.LabelToInputGap
-        txtUsername = ModernTheme.MakeTextBox()
-        txtUsername.Location = New Point(0, yPos)
-        txtUsername.Size = New Size(200, 25) ' Original size
+        ' Username textbox
+        txtUsername = New TextBox With {
+            .Font = New Font("Segoe UI", 11.0F, FontStyle.Regular),
+            .Size = New Size(260, 42),
+            .Location = New Point(20, 128),
+            .BorderStyle = BorderStyle.FixedSingle,
+            .BackColor = Color.White,
+            .ForeColor = Color.FromArgb(30, 30, 30)
+        }
         cardPanel.Controls.Add(txtUsername)
         
-        yPos = txtUsername.Bottom + ModernTheme.FieldSpacing
+        ' Password label
         lblPassword = New Label With {
-            .Text = "Password:",
-            .Location = New Point(0, yPos),
-            .AutoSize = True,
-            .BackColor = ModernTheme.Surface,
-            .ForeColor = ModernTheme.PrimaryText
+            .Text = "Password",
+            .Font = New Font("Segoe UI", 10.5F, FontStyle.SemiBold),
+            .ForeColor = Color.FromArgb(60, 60, 60),
+            .AutoSize = False,
+            .Size = New Size(260, 24),
+            .Location = New Point(20, 182),
+            .BackColor = Color.Transparent
         }
         cardPanel.Controls.Add(lblPassword)
         
-        yPos = lblPassword.Bottom + ModernTheme.LabelToInputGap
-        txtPassword = ModernTheme.MakeTextBox()
-        txtPassword.Location = New Point(0, yPos)
-        txtPassword.Size = New Size(200, 25) ' Original size
-        txtPassword.PasswordChar = "*"c
+        ' Password textbox
+        txtPassword = New TextBox With {
+            .Font = New Font("Segoe UI", 11.0F, FontStyle.Regular),
+            .Size = New Size(260, 42),
+            .Location = New Point(20, 210),
+            .BorderStyle = BorderStyle.FixedSingle,
+            .PasswordChar = "*"c,
+            .BackColor = Color.White,
+            .ForeColor = Color.FromArgb(30, 30, 30)
+        }
         cardPanel.Controls.Add(txtPassword)
         
-        yPos = txtPassword.Bottom + ModernTheme.FieldSpacing
+        ' Error label
         lblError = New Label With {
-            .ForeColor = ModernTheme.Danger,
-            .Location = New Point(0, yPos),
-            .AutoSize = True,
-            .BackColor = ModernTheme.Surface,
-            .MaximumSize = New Size(300, 0),
-            .Size = New Size(300, 20) ' Original size
+            .Font = New Font("Segoe UI", 9.0F, FontStyle.Regular),
+            .ForeColor = Color.FromArgb(220, 50, 50),
+            .AutoSize = False,
+            .Size = New Size(260, 22),
+            .Location = New Point(20, 264),
+            .BackColor = Color.Transparent,
+            .TextAlign = ContentAlignment.MiddleLeft
         }
         cardPanel.Controls.Add(lblError)
         
-        yPos = lblError.Bottom + ModernTheme.FieldSpacing
-        btnLogin = ModernTheme.MakePrimaryButton("Login")
-        btnLogin.Location = New Point(0, yPos)
-        btnLogin.Size = New Size(80, 30) ' Original size
+        ' Login button
+        btnLogin = New Button With {
+            .Text = "Sign In",
+            .Font = New Font("Segoe UI", 12.0F, FontStyle.Bold),
+            .Size = New Size(260, 48),
+            .Location = New Point(20, 295),
+            .FlatStyle = FlatStyle.Flat,
+            .BackColor = Color.FromArgb(25, 118, 210),
+            .ForeColor = Color.White,
+            .Cursor = Cursors.Hand
+        }
+        btnLogin.FlatAppearance.BorderSize = 0
+        btnLogin.FlatAppearance.MouseDownBackColor = Color.FromArgb(21, 101, 192)
+        btnLogin.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 136, 229)
         ModernTheme.ApplyRoundButton(btnLogin)
         cardPanel.Controls.Add(btnLogin)
-
-        ' Size cardPanel and form to fit content exactly
-        cardPanel.Height = yPos + btnLogin.Height + ModernTheme.CardPadding
-        Me.ClientSize = New Size(cardPanel.Width + (2 * ModernTheme.FormPadding), cardPanel.Height + (2 * ModernTheme.FormPadding))
-
-        ' Add card panel to form
-        Me.Controls.Add(cardPanel)
 
         ' Event handlers
         AddHandler btnLogin.Click, AddressOf btnLogin_Click
         AddHandler txtPassword.KeyPress, AddressOf txtPassword_KeyPress
         AddHandler Me.Load, AddressOf LoginNew_Load
+        AddHandler btnLogin.Resize, Sub(s, e) ModernTheme.ApplyRoundButton(CType(s, Button))
 
         txtUsername.Focus()
     End Sub
