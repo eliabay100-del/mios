@@ -15,11 +15,13 @@ Public Class Dashboard
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "MIOS Inventory Management"
         Me.Size = New Size(1180, 820)
+        Me.MinimumSize = New Size(980, 650)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.None
-        Me.MaximizeBox = False
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
         Me.MinimizeBox = False
-        Me.ControlBox = False
+        Me.ControlBox = True
+        Me.WindowState = FormWindowState.Maximized
 
         InitializeDashboard()
         ModernTheme.EnableVerticalScroll(Me, 1000)
