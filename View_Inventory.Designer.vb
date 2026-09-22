@@ -27,7 +27,7 @@ Partial Class View_Inventory
         'View_Inventory
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
-        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi
         Me.ClientSize = New System.Drawing.Size(800, 450)
         Me.Name = "View_Inventory"
         Me.Text = "View_Inventory"

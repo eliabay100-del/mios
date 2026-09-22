@@ -1,4 +1,4 @@
-﻿Imports System.Data.SqlClient
+Imports System.Data.SqlClient
 Imports System.Windows.Forms
 Imports System.Drawing
 
@@ -6,10 +6,13 @@ Public Class LoginNew
     Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
 
     ' Controls
-    Private WithEvents txtUsername As New TextBox With {.Location = New Point(130, 70), .Size = New Size(200, 25)}
-    Private WithEvents txtPassword As New TextBox With {.Location = New Point(130, 110), .Size = New Size(200, 25), .PasswordChar = "*"c}
-    Private WithEvents btnLogin As New Button With {.Text = "Login", .Location = New Point(50, 170), .Size = New Size(80, 30)}
-    Private WithEvents lblError As New Label With {.ForeColor = Color.Red, .Location = New Point(50, 140), .Size = New Size(300, 20)}
+    Private lblUsername As Label
+    Private lblPassword As Label
+    Private txtUsername As TextBox
+    Private txtPassword As TextBox
+    Private btnLogin As Button
+    Private lblError As Label
+    Private cardPanel As Panel
 
     ' Properties to hold login info
     Public Property LoginSuccessful As Boolean = False
@@ -20,17 +23,59 @@ Public Class LoginNew
         ' Form settings
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Login - Inventory System"
-        Me.Size = New Size(400, 250)
+        Me.Size = New Size(450, 320)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
 
-        ' Add controls
-        Me.Controls.Add(New Label With {.Text = "Username:", .Location = New Point(50, 70), .Size = New Size(80, 25)})
-        Me.Controls.Add(txtUsername)
-        Me.Controls.Add(New Label With {.Text = "Password:", .Location = New Point(50, 110), .Size = New Size(80, 25)})
-        Me.Controls.Add(txtPassword)
-        Me.Controls.Add(lblError)
-        Me.Controls.Add(btnLogin)
+        ' Create card panel for consistent layout
+        cardPanel = ModernTheme.CreateCardPanel()
+        cardPanel.Location = New Point(ModernTheme.FormPadding, ModernTheme.FormPadding)
+        cardPanel.Size = New Size(Me.ClientSize.Width - (2 * ModernTheme.FormPadding), 220)
+
+        ' Initialize controls with consistent spacing
+        lblUsername = New Label With {
+            .Text = "Username:",
+            .Location = New Point(0, 0),
+            .Size = New Size(100, ModernTheme.FieldSpacing),
+            .ForeColor = ModernTheme.PrimaryText
+        }
+
+        txtUsername = ModernTheme.MakeTextBox()
+        txtUsername.Location = New Point(0, ModernTheme.FieldSpacing + ModernTheme.LabelToInputGap)
+        txtUsername.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 42)
+
+        lblPassword = New Label With {
+            .Text = "Password:",
+            .Location = New Point(0, ModernTheme.FieldSpacing * 2 + ModernTheme.LabelToInputGap + 10),
+            .Size = New Size(100, ModernTheme.FieldSpacing),
+            .ForeColor = ModernTheme.PrimaryText
+        }
+
+        txtPassword = ModernTheme.MakeTextBox()
+        txtPassword.Location = New Point(0, ModernTheme.FieldSpacing * 3 + ModernTheme.LabelToInputGap * 2 + 10)
+        txtPassword.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 42)
+        txtPassword.PasswordChar = "*"c
+
+        lblError = New Label With {
+            .ForeColor = ModernTheme.Danger,
+            .Location = New Point(0, ModernTheme.FieldSpacing * 4 + ModernTheme.LabelToInputGap * 3 + 20),
+            .Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 20)
+        }
+
+        btnLogin = ModernTheme.MakePrimaryButton("Login")
+        btnLogin.Location = New Point(0, ModernTheme.FieldSpacing * 5 + ModernTheme.LabelToInputGap * 4 + 30)
+        btnLogin.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 40)
+
+        ' Add controls to card panel
+        cardPanel.Controls.Add(lblUsername)
+        cardPanel.Controls.Add(txtUsername)
+        cardPanel.Controls.Add(lblPassword)
+        cardPanel.Controls.Add(txtPassword)
+        cardPanel.Controls.Add(lblError)
+        cardPanel.Controls.Add(btnLogin)
+
+        ' Add card panel to form
+        Me.Controls.Add(cardPanel)
 
         ' Event handlers
         AddHandler btnLogin.Click, AddressOf btnLogin_Click

@@ -1,1 +1,26 @@
-Nothing should be ignored since only source code files (.vb files) are being modified and no build artifacts, dependencies, or temporary files are present in the changes.
+```
+# Visual Basic build artifacts
+*.vbproj.user
+*.userprefs
+*.suo
+*.user
+_App_Code/
+bin/
+obj/
+
+# Configuration files that might contain sensitive data
+App.config
+*.config
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE specific
+.vs/
+*.userosscache
+*.sln.docstates
+```

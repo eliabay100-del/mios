@@ -3,6 +3,14 @@ Imports System.Drawing.Drawing2D
 Imports System.Windows.Forms
 
 Public Module ModernTheme
+    ' Spacing constants for consistent layout across all forms
+    Public Const FormPadding As Integer = 24
+    Public Const FieldSpacing As Integer = 16
+    Public Const LabelToInputGap As Integer = 6
+    Public Const SectionGap As Integer = 32
+    Public Const CardPadding As Integer = 16
+    Public Const CardBorderRadius As Integer = 8
+    
     Public ReadOnly PageBackground As Color = Color.FromArgb(245, 243, 239)
     Public ReadOnly Surface As Color = Color.FromArgb(255, 255, 255)
     Public ReadOnly SurfaceAlt As Color = Color.FromArgb(246, 247, 244)
@@ -20,8 +28,7 @@ Public Module ModernTheme
         form.BackColor = PageBackground
         form.ForeColor = PrimaryText
         form.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular)
-        form.AutoScroll = True
-        form.AutoScrollMinSize = New Size(0, form.ClientSize.Height + 1)
+        form.Padding = New Padding(FormPadding)
         AddHandler form.Shown, Sub(sender, e) StyleButtons(form)
         AddHandler LanguageService.LanguageChanged, Sub(sender, e) LanguageService.ApplyTo(form)
     End Sub
@@ -44,6 +51,8 @@ Public Module ModernTheme
         btn.UseVisualStyleBackColor = False
         btn.Padding = New Padding(14, 8, 14, 8)
         btn.Height = 40
+        btn.FlatAppearance.MouseDownBackColor = AccentDark
+        btn.FlatAppearance.MouseOverBackColor = AccentDark
         Return btn
     End Function
 
@@ -52,21 +61,29 @@ Public Module ModernTheme
         btn.Text = text
         btn.FlatStyle = FlatStyle.Flat
         btn.FlatAppearance.BorderSize = 0
-        btn.BackColor = Accent
-        btn.ForeColor = Color.White
+        btn.BackColor = Surface
+        btn.ForeColor = PrimaryText
         btn.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
         btn.Cursor = Cursors.Hand
         btn.UseVisualStyleBackColor = False
         btn.Padding = New Padding(14, 8, 14, 8)
         btn.Height = 40
+        btn.FlatAppearance.BorderColor = Border
+        btn.FlatAppearance.BorderSize = 1
+        btn.FlatAppearance.MouseDownBackColor = SurfaceAlt
+        btn.FlatAppearance.MouseOverBackColor = SurfaceAlt
         Return btn
     End Function
 
     Private Sub StyleButtons(root As Control)
         If TypeOf root Is Button Then
             Dim button = DirectCast(root, Button)
-            button.BackColor = Accent
-            button.ForeColor = Color.White
+            If button.BackColor = Accent OrElse button.BackColor = Surface Then
+                ' Keep existing colors
+            Else
+                button.BackColor = Accent
+                button.ForeColor = Color.White
+            End If
             button.FlatStyle = FlatStyle.Flat
             button.FlatAppearance.BorderSize = 0
             button.UseVisualStyleBackColor = False
@@ -77,6 +94,22 @@ Public Module ModernTheme
         For Each child As Control In root.Controls
             StyleButtons(child)
         Next
+    End Sub
+
+    Public Function CreateCardPanel() As Panel
+        Dim panel As New Panel
+        panel.BackColor = Surface
+        panel.ForeColor = PrimaryText
+        panel.Padding = New Padding(CardPadding)
+        panel.BorderStyle = BorderStyle.None
+        Return panel
+    End Function
+
+    Public Sub ApplyCardStyle(panel As Panel)
+        panel.BackColor = Surface
+        panel.ForeColor = PrimaryText
+        panel.Padding = New Padding(CardPadding)
+        panel.BorderStyle = BorderStyle.None
     End Sub
 
     Private Sub RoundButton(button As Button)

@@ -27,7 +27,7 @@ Partial Class View_SoldItem
         'View_SoldItem
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
-        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi
         Me.ClientSize = New System.Drawing.Size(800, 450)
         Me.Name = "View_SoldItem"
         Me.Text = "View_SoldItem"
