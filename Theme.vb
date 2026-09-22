@@ -72,14 +72,35 @@ Public Module ModernTheme
     Private Sub StyleButtons(root As Control)
         If TypeOf root Is Button Then
             Dim button = DirectCast(root, Button)
-            button.BackColor = Accent
-            button.ForeColor = Color.White
-            button.FlatStyle = FlatStyle.Flat
-            button.FlatAppearance.BorderSize = 0
-            button.UseVisualStyleBackColor = False
-            button.Cursor = Cursors.Hand
-            button.FlatAppearance.MouseDownBackColor = AccentDark
-            button.FlatAppearance.MouseOverBackColor = AccentDark
+            Dim isAdminAction As Boolean = String.Equals(Convert.ToString(button.Tag), "AdminAction", StringComparison.OrdinalIgnoreCase)
+            Dim isHeaderExit As Boolean = String.Equals(Convert.ToString(button.Tag), "HeaderExit", StringComparison.OrdinalIgnoreCase)
+
+            If isAdminAction Then
+                button.ForeColor = Color.White
+                button.FlatStyle = FlatStyle.Flat
+                button.FlatAppearance.BorderSize = 0
+                button.UseVisualStyleBackColor = False
+                button.Cursor = Cursors.Hand
+                button.FlatAppearance.MouseOverBackColor = Color.FromArgb(70, 87, 98)
+                button.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 54, 62)
+            ElseIf isHeaderExit Then
+                button.ForeColor = Color.White
+                button.FlatStyle = FlatStyle.Flat
+                button.FlatAppearance.BorderSize = 0
+                button.UseVisualStyleBackColor = False
+                button.Cursor = Cursors.Hand
+                button.FlatAppearance.MouseOverBackColor = Color.FromArgb(190, 45, 45)
+                button.FlatAppearance.MouseDownBackColor = Color.FromArgb(165, 35, 35)
+            Else
+                button.BackColor = Accent
+                button.ForeColor = Color.White
+                button.FlatStyle = FlatStyle.Flat
+                button.FlatAppearance.BorderSize = 0
+                button.UseVisualStyleBackColor = False
+                button.Cursor = Cursors.Hand
+                button.FlatAppearance.MouseDownBackColor = AccentDark
+                button.FlatAppearance.MouseOverBackColor = AccentDark
+            End If
         End If
         For Each child As Control In root.Controls
             StyleButtons(child)
