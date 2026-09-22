@@ -10,6 +10,7 @@ Public Class Dashboard
     Private pnlQuickActions As Panel
     Private pnlAdminActions As FlowLayoutPanel
     Private lblTitle As Label
+    Private btnLanguage As Button
 
     Public Sub New()
         ModernTheme.ApplyWindowTheme(Me)
@@ -74,6 +75,15 @@ Public Class Dashboard
         btnHeaderExit.ForeColor = ModernTheme.Danger
         AddHandler btnHeaderExit.Click, AddressOf btnExit_Click
         pnlHeader.Controls.Add(btnHeaderExit)
+
+        btnLanguage = ModernTheme.MakeSecondaryButton("አማርኛ")
+        btnLanguage.Location = New Point(700, 48)
+        btnLanguage.Size = New Size(110, 42)
+        AddHandler btnLanguage.Click, Sub(sender, e)
+                                        LanguageService.Toggle()
+                                        btnLanguage.Text = If(LanguageService.IsAmharic, "English", "አማርኛ")
+                                    End Sub
+        pnlHeader.Controls.Add(btnLanguage)
         Me.Controls.Add(pnlHeader)
 
         pnlQuickActions = New Panel With {

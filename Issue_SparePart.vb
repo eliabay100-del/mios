@@ -20,6 +20,7 @@ Public Class Issue_SparePart
     Private savedPhone As String = ""
 
     Private Sub Issue_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ModernTheme.ApplyWindowTheme(Me)
         If Not SecurityContext.HasPermission("INVENTORY_ISSUE") Then
             MessageBox.Show("Your role cannot issue inventory.", "Access denied", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Me.Close()

@@ -36,6 +36,7 @@ Public Class View_SoldItem
     Private totalRevenue As Decimal = 0
 
     Private Sub View_SoldItem_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ModernTheme.ApplyWindowTheme(Me)
         SetupForm()
         LoadSoldItems()
     End Sub

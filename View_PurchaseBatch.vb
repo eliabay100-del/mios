@@ -35,6 +35,7 @@ Public Class View_PurchaseBatch
     Private totalValue As Decimal = 0
 
     Private Sub View_PurchaseBatch_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ModernTheme.ApplyWindowTheme(Me)
         SetupForm()
         LoadPurchaseBatches()
     End Sub

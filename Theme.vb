@@ -1,4 +1,5 @@
 Imports System.Drawing
+Imports System.Drawing.Drawing2D
 Imports System.Windows.Forms
 
 Public Module ModernTheme
@@ -8,9 +9,9 @@ Public Module ModernTheme
     Public ReadOnly PrimaryText As Color = Color.FromArgb(24, 29, 35)
     Public ReadOnly MutedText As Color = Color.FromArgb(96, 106, 119)
     Public ReadOnly Border As Color = Color.FromArgb(224, 227, 231)
-    Public ReadOnly Accent As Color = Color.FromArgb(31, 91, 143)
-    Public ReadOnly AccentDark As Color = Color.FromArgb(18, 56, 87)
-    Public ReadOnly AccentSoft As Color = Color.FromArgb(232, 238, 247)
+    Public ReadOnly Accent As Color = Color.FromArgb(48, 145, 86)
+    Public ReadOnly AccentDark As Color = Color.FromArgb(34, 108, 64)
+    Public ReadOnly AccentSoft As Color = Color.FromArgb(225, 241, 229)
     Public ReadOnly Success As Color = Color.FromArgb(46, 146, 105)
     Public ReadOnly Danger As Color = Color.FromArgb(203, 78, 78)
     Public ReadOnly Warning As Color = Color.FromArgb(212, 150, 78)
@@ -21,6 +22,8 @@ Public Module ModernTheme
         form.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular)
         form.AutoScroll = True
         form.AutoScrollMinSize = New Size(0, form.ClientSize.Height + 1)
+        AddHandler form.Shown, Sub(sender, e) StyleButtons(form)
+        AddHandler LanguageService.LanguageChanged, Sub(sender, e) LanguageService.ApplyTo(form)
     End Sub
 
     Public Sub EnableVerticalScroll(form As Form, contentHeight As Integer)
@@ -49,8 +52,8 @@ Public Module ModernTheme
         btn.Text = text
         btn.FlatStyle = FlatStyle.Flat
         btn.FlatAppearance.BorderSize = 0
-        btn.BackColor = Surface
-        btn.ForeColor = PrimaryText
+        btn.BackColor = Accent
+        btn.ForeColor = Color.White
         btn.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
         btn.Cursor = Cursors.Hand
         btn.UseVisualStyleBackColor = False
@@ -58,6 +61,36 @@ Public Module ModernTheme
         btn.Height = 40
         Return btn
     End Function
+
+    Private Sub StyleButtons(root As Control)
+        If TypeOf root Is Button Then
+            Dim button = DirectCast(root, Button)
+            button.BackColor = Accent
+            button.ForeColor = Color.White
+            button.FlatStyle = FlatStyle.Flat
+            button.FlatAppearance.BorderSize = 0
+            button.UseVisualStyleBackColor = False
+            button.Cursor = Cursors.Hand
+            RoundButton(button)
+        End If
+        For Each child As Control In root.Controls
+            StyleButtons(child)
+        Next
+    End Sub
+
+    Private Sub RoundButton(button As Button)
+        If button.Width <= 0 OrElse button.Height <= 0 Then Return
+        Using path As New GraphicsPath()
+            Dim radius As Integer = Math.Min(10, Math.Min(button.Width, button.Height) \ 3)
+            Dim diameter As Integer = radius * 2
+            path.AddArc(0, 0, diameter, diameter, 180, 90)
+            path.AddArc(button.Width - diameter, 0, diameter, diameter, 270, 90)
+            path.AddArc(button.Width - diameter, button.Height - diameter, diameter, diameter, 0, 90)
+            path.AddArc(0, button.Height - diameter, diameter, diameter, 90, 90)
+            path.CloseFigure()
+            button.Region = New Region(path)
+        End Using
+    End Sub
 
     Public Function MakeTextBox() As TextBox
         Dim txt As New TextBox

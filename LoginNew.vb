@@ -10,6 +10,7 @@ Public Class LoginNew
     Private WithEvents txtPassword As New TextBox With {.Location = New Point(130, 110), .Size = New Size(200, 25), .PasswordChar = "*"c}
     Private WithEvents btnLogin As New Button With {.Text = "Login", .Location = New Point(50, 170), .Size = New Size(80, 30)}
     Private WithEvents lblError As New Label With {.ForeColor = Color.Red, .Location = New Point(50, 140), .Size = New Size(300, 20)}
+    Private WithEvents btnLanguage As New Button With {.Text = "አማርኛ", .Location = New Point(300, 20), .Size = New Size(80, 30)}
 
     ' Properties to hold login info
     Public Property LoginSuccessful As Boolean = False
@@ -18,6 +19,7 @@ Public Class LoginNew
 
     Public Sub New()
         ' Form settings
+        ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Login - Inventory System"
         Me.Size = New Size(400, 250)
         Me.StartPosition = FormStartPosition.CenterScreen
@@ -30,11 +32,16 @@ Public Class LoginNew
         Me.Controls.Add(txtPassword)
         Me.Controls.Add(lblError)
         Me.Controls.Add(btnLogin)
+        Me.Controls.Add(btnLanguage)
 
         ' Event handlers
         AddHandler btnLogin.Click, AddressOf btnLogin_Click
         AddHandler txtPassword.KeyPress, AddressOf txtPassword_KeyPress
         AddHandler Me.Load, AddressOf LoginNew_Load
+        AddHandler btnLanguage.Click, Sub(sender, e)
+                                          LanguageService.Toggle()
+                                          btnLanguage.Text = If(LanguageService.IsAmharic, "English", "አማርኛ")
+                                      End Sub
 
         txtUsername.Focus()
     End Sub

@@ -30,6 +30,7 @@ Public Class View_StockCard
     Private pnlActions As Panel
 
     Private Sub View_StockCard_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ModernTheme.ApplyWindowTheme(Me)
         SetupForm()
         LoadStockMovements("") ' Load all by default
     End Sub
