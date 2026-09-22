@@ -33,45 +33,51 @@ Public Class LoginNew
         cardPanel.Size = New Size(Me.ClientSize.Width - (2 * ModernTheme.FormPadding), 220)
 
         ' Initialize controls with consistent spacing
+        Dim yPos As Integer = 0
+        
         lblUsername = New Label With {
             .Text = "Username:",
-            .Location = New Point(0, 0),
-            .Size = New Size(100, ModernTheme.FieldSpacing),
+            .Location = New Point(0, yPos),
+            .AutoSize = True,
             .ForeColor = ModernTheme.PrimaryText
         }
-
+        cardPanel.Controls.Add(lblUsername)
+        
+        yPos = lblUsername.Bottom + ModernTheme.LabelToInputGap
         txtUsername = ModernTheme.MakeTextBox()
-        txtUsername.Location = New Point(0, ModernTheme.FieldSpacing + ModernTheme.LabelToInputGap)
+        txtUsername.Location = New Point(0, yPos)
         txtUsername.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 42)
-
+        cardPanel.Controls.Add(txtUsername)
+        
+        yPos = txtUsername.Bottom + ModernTheme.FieldSpacing
         lblPassword = New Label With {
             .Text = "Password:",
-            .Location = New Point(0, ModernTheme.FieldSpacing * 2 + ModernTheme.LabelToInputGap + 10),
-            .Size = New Size(100, ModernTheme.FieldSpacing),
+            .Location = New Point(0, yPos),
+            .AutoSize = True,
             .ForeColor = ModernTheme.PrimaryText
         }
-
+        cardPanel.Controls.Add(lblPassword)
+        
+        yPos = lblPassword.Bottom + ModernTheme.LabelToInputGap
         txtPassword = ModernTheme.MakeTextBox()
-        txtPassword.Location = New Point(0, ModernTheme.FieldSpacing * 3 + ModernTheme.LabelToInputGap * 2 + 10)
+        txtPassword.Location = New Point(0, yPos)
         txtPassword.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 42)
         txtPassword.PasswordChar = "*"c
-
+        cardPanel.Controls.Add(txtPassword)
+        
+        yPos = txtPassword.Bottom + ModernTheme.FieldSpacing
         lblError = New Label With {
             .ForeColor = ModernTheme.Danger,
-            .Location = New Point(0, ModernTheme.FieldSpacing * 4 + ModernTheme.LabelToInputGap * 3 + 20),
-            .Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 20)
+            .Location = New Point(0, yPos),
+            .AutoSize = True,
+            .MaximumSize = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 0)
         }
-
-        btnLogin = ModernTheme.MakePrimaryButton("Login")
-        btnLogin.Location = New Point(0, ModernTheme.FieldSpacing * 5 + ModernTheme.LabelToInputGap * 4 + 30)
-        btnLogin.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 40)
-
-        ' Add controls to card panel
-        cardPanel.Controls.Add(lblUsername)
-        cardPanel.Controls.Add(txtUsername)
-        cardPanel.Controls.Add(lblPassword)
-        cardPanel.Controls.Add(txtPassword)
         cardPanel.Controls.Add(lblError)
+        
+        yPos = lblError.Bottom + ModernTheme.FieldSpacing
+        btnLogin = ModernTheme.MakePrimaryButton("Login")
+        btnLogin.Location = New Point(0, yPos)
+        btnLogin.Size = New Size(cardPanel.ClientSize.Width - ModernTheme.CardPadding * 2, 40)
         cardPanel.Controls.Add(btnLogin)
 
         ' Add card panel to form

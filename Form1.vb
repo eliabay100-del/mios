@@ -54,30 +54,33 @@ Public Class Dashboard
         pnlHeader.Controls.Add(subtitle)
 
         Dim userChip As New Panel With {
-            .Size = New Size(168, 42),
+            .AutoSize = True,
+            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Location = New Point(Me.Width - 208, 48),
             .BackColor = ModernTheme.SurfaceAlt,
-            .BorderStyle = BorderStyle.None
+            .BorderStyle = BorderStyle.None,
+            .Padding = New Padding(16, 11, 16, 11),
+            .MinimumSize = New Size(120, 0)
         }
         Dim userText As New Label With {
             .Text = If(String.IsNullOrEmpty(Username), "Admin User", Username) & "  /  " & If(String.IsNullOrEmpty(SecurityContext.CurrentRole), "User", SecurityContext.CurrentRole),
             .ForeColor = ModernTheme.PrimaryText,
             .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
             .AutoSize = True,
-            .Location = New Point(18, 11)
+            .Dock = DockStyle.Fill
         }
         userChip.Controls.Add(userText)
         pnlHeader.Controls.Add(userChip)
 
         Dim btnHeaderExit As Button = ModernTheme.MakeSecondaryButton("Exit")
-        btnHeaderExit.Location = New Point(820, 48)
+        btnHeaderExit.Location = New Point(userChip.Left - 120, 48)
         btnHeaderExit.Size = New Size(110, 42)
         btnHeaderExit.ForeColor = ModernTheme.Danger
         AddHandler btnHeaderExit.Click, AddressOf btnExit_Click
         pnlHeader.Controls.Add(btnHeaderExit)
 
         btnLanguage = ModernTheme.MakeSecondaryButton("አማርኛ")
-        btnLanguage.Location = New Point(700, 48)
+        btnLanguage.Location = New Point(btnHeaderExit.Left - 120, 48)
         btnLanguage.Size = New Size(110, 42)
         AddHandler btnLanguage.Click, Sub(sender, e)
                                         LanguageService.Toggle()
@@ -94,29 +97,34 @@ Public Class Dashboard
 
         Dim hero As New Panel With {
             .Location = New Point(0, 0),
-            .Size = New Size(1040, 170),
-            .BackColor = Color.FromArgb(28, 39, 44)
+            .AutoSize = True,
+            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .BackColor = Color.FromArgb(28, 39, 44),
+            .Padding = New Padding(26, 28, 26, 28),
+            .MinimumSize = New Size(1040, 0)
         }
         Dim heroText As New Label With {
             .Text = "Your inventory, finally in sync.",
             .ForeColor = Color.White,
             .Font = New Font("Segoe UI", 26, FontStyle.Bold),
-            .Location = New Point(26, 28),
-            .AutoSize = True
+            .AutoSize = True,
+            .Dock = DockStyle.Top
         }
         hero.Controls.Add(heroText)
         Dim heroSub As New Label With {
             .Text = "Track stock movement, purchasing, customers, and suppliers from one dashboard.",
             .ForeColor = Color.FromArgb(210, 210, 210),
             .Font = New Font("Segoe UI", 11.0F),
-            .Location = New Point(28, 80),
-            .Size = New Size(500, 50)
+            .AutoSize = True,
+            .MaximumSize = New Size(700, 0),
+            .Margin = New Padding(0, 16, 0, 28),
+            .Dock = DockStyle.Top
         }
         hero.Controls.Add(heroSub)
         pnlQuickActions.Controls.Add(hero)
 
         Dim actionPanel As New FlowLayoutPanel With {
-            .Location = New Point(0, 190),
+            .Location = New Point(0, hero.Bottom + ModernTheme.SectionGap),
             .Size = New Size(1040, 150),
             .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = True,
@@ -144,7 +152,7 @@ Public Class Dashboard
         pnlQuickActions.Controls.Add(actionPanel)
 
         Dim statGrid As New TableLayoutPanel With {
-            .Location = New Point(0, 358),
+            .Location = New Point(0, actionPanel.Bottom + ModernTheme.SectionGap),
             .Size = New Size(1040, 260),
             .ColumnCount = 2,
             .RowCount = 2,
@@ -166,7 +174,7 @@ Public Class Dashboard
         Me.Controls.Add(pnlQuickActions)
 
         pnlAdminActions = New FlowLayoutPanel With {
-            .Location = New Point(0, 640),
+            .Location = New Point(0, statGrid.Bottom + ModernTheme.SectionGap),
             .Size = New Size(1040, 135),
             .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = True,
@@ -284,17 +292,19 @@ Public Class Dashboard
         Dim card As New Panel With {
             .BackColor = Color.White,
             .Padding = New Padding(16),
-            .Height = 110,
+            .AutoSize = True,
+            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Margin = New Padding(8),
-            .Dock = DockStyle.Fill
+            .Dock = DockStyle.Fill,
+            .MinimumSize = New Size(200, 0)
         }
 
         Dim lblTitle As New Label With {
             .Text = title,
             .ForeColor = ModernTheme.MutedText,
             .Font = New Font("Segoe UI", 10.0F),
-            .Location = New Point(18, 18),
-            .AutoSize = True
+            .AutoSize = True,
+            .Dock = DockStyle.Top
         }
         card.Controls.Add(lblTitle)
 
@@ -302,8 +312,9 @@ Public Class Dashboard
             .Text = value,
             .ForeColor = ModernTheme.PrimaryText,
             .Font = New Font("Segoe UI", 20, FontStyle.Bold),
-            .Location = New Point(18, 46),
-            .AutoSize = True
+            .AutoSize = True,
+            .Margin = New Padding(0, 8, 0, 8),
+            .Dock = DockStyle.Top
         }
         card.Controls.Add(lblValue)
 
@@ -311,8 +322,9 @@ Public Class Dashboard
             .Text = note,
             .ForeColor = ModernTheme.Success,
             .Font = New Font("Segoe UI", 9.0F),
-            .Location = New Point(18, 88),
-            .AutoSize = True
+            .AutoSize = True,
+            .Margin = New Padding(0, 8, 0, 16),
+            .Dock = DockStyle.Top
         }
         card.Controls.Add(lblNote)
         Return card
