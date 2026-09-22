@@ -65,6 +65,13 @@ Public Class Dashboard
         }
         userChip.Controls.Add(userText)
         pnlHeader.Controls.Add(userChip)
+
+        Dim btnHeaderExit As Button = ModernTheme.MakeSecondaryButton("Exit")
+        btnHeaderExit.Location = New Point(820, 48)
+        btnHeaderExit.Size = New Size(110, 42)
+        btnHeaderExit.ForeColor = ModernTheme.Danger
+        AddHandler btnHeaderExit.Click, AddressOf btnExit_Click
+        pnlHeader.Controls.Add(btnHeaderExit)
         Me.Controls.Add(pnlHeader)
 
         pnlQuickActions = New Panel With {
@@ -189,12 +196,6 @@ Public Class Dashboard
             OpenDialog(Function() New BackupForm())
         End Sub)
 
-        Dim btnExitUI As Button = ModernTheme.MakeSecondaryButton("Exit System")
-        btnExitUI.Width = 145
-        btnExitUI.Height = 38
-        btnExitUI.ForeColor = ModernTheme.Danger
-        AddHandler btnExitUI.Click, AddressOf btnExit_Click
-        pnlAdminActions.Controls.Add(btnExitUI)
     End Sub
 
     Private Sub AddDashboardAction(text As String, x As Integer, y As Integer, visible As Boolean, action As Action)
@@ -285,8 +286,8 @@ Public Class Dashboard
         Dim lblValue As New Label With {
             .Text = value,
             .ForeColor = ModernTheme.PrimaryText,
-            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
-            .Location = New Point(18, 42),
+            .Font = New Font("Segoe UI", 20, FontStyle.Bold),
+            .Location = New Point(18, 46),
             .AutoSize = True
         }
         card.Controls.Add(lblValue)
@@ -295,7 +296,7 @@ Public Class Dashboard
             .Text = note,
             .ForeColor = ModernTheme.Success,
             .Font = New Font("Segoe UI", 9.0F),
-            .Location = New Point(18, 82),
+            .Location = New Point(18, 88),
             .AutoSize = True
         }
         card.Controls.Add(lblNote)
