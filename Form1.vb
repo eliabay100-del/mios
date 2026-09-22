@@ -73,6 +73,7 @@ Public Class Dashboard
         Dim btnHeaderExit As Button = ModernTheme.MakeSecondaryButton("Exit")
         btnHeaderExit.Location = New Point(820, 48)
         btnHeaderExit.Size = New Size(110, 42)
+        btnHeaderExit.Tag = "HeaderExit"
         btnHeaderExit.BackColor = ModernTheme.Danger
         btnHeaderExit.ForeColor = Color.White
         btnHeaderExit.FlatAppearance.BorderColor = ModernTheme.Danger
@@ -224,6 +225,7 @@ Public Class Dashboard
         button.Height = 42
         button.AutoEllipsis = False
         button.Padding = New Padding(8, 4, 8, 4)
+        button.Tag = "AdminAction"
         button.BackColor = Color.FromArgb(54, 69, 79)
         button.ForeColor = Color.White
         button.FlatAppearance.BorderColor = Color.FromArgb(54, 69, 79)
