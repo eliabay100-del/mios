@@ -55,8 +55,10 @@ Public Module ModernTheme
         ' Scale fonts as well as geometry so explicit runtime-created fonts
         ' remain proportional at 125%, 150%, 175%, etc. Inherited fonts are
         ' tracked so they are not accidentally scaled more than once.
-        ScaleControlTree(form, scale, form.Font)
-        form.Font = ScaleFont(form.Font, scale)
+        Dim originalFormFont As Font = form.Font
+        Dim scaledFormFont As Font = ScaleFont(originalFormFont, scale)
+        ScaleControlTree(form, scale, originalFormFont, scaledFormFont)
+        form.Font = scaledFormFont
 
         If form.WindowState <> FormWindowState.Maximized Then
             form.Size = ScaleSize(form.Size, scale)
@@ -75,7 +77,7 @@ Public Module ModernTheme
         End If
     End Sub
 
-    Private Sub ScaleControlTree(parent As Control, scale As Single, inheritedFont As Font)
+    Private Sub ScaleControlTree(parent As Control, scale As Single, inheritedOriginalFont As Font, inheritedScaledFont As Font)
         For Each child As Control In parent.Controls
             child.Location = ScalePoint(child.Location, scale)
 
@@ -87,11 +89,15 @@ Public Module ModernTheme
             child.Margin = ScalePadding(child.Margin, scale)
 
             Dim originalFont As Font = child.Font
-            If originalFont.Equals(inheritedFont) Then
-                child.Font = ScaleFont(inheritedFont, scale)
+            Dim scaledChildFont As Font
+
+            If originalFont.Equals(inheritedOriginalFont) Then
+                scaledChildFont = inheritedScaledFont
             Else
-                child.Font = ScaleFont(originalFont, scale)
+                scaledChildFont = ScaleFont(originalFont, scale)
             End If
+
+            child.Font = scaledChildFont
 
             If child.MinimumSize.Width > 0 OrElse child.MinimumSize.Height > 0 Then
                 child.MinimumSize = ScaleSize(child.MinimumSize, scale)
@@ -116,7 +122,7 @@ Public Module ModernTheme
                 Next
             End If
 
-            ScaleControlTree(child, scale, originalFont)
+            ScaleControlTree(child, scale, originalFont, scaledChildFont)
         Next
     End Sub
 
