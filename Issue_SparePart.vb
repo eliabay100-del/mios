@@ -20,6 +20,11 @@ Public Class Issue_SparePart
     Private savedPhone As String = ""
 
     Private Sub Issue_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        If Not SecurityContext.HasPermission("INVENTORY_ISSUE") Then
+            MessageBox.Show("Your role cannot issue inventory.", "Access denied", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Me.Close()
+            Return
+        End If
         ' Form setup
         Me.Text = "Issue Spare Parts"
         Me.StartPosition = FormStartPosition.CenterScreen

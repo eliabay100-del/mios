@@ -8,6 +8,7 @@ Public Class Dashboard
 
     Private pnlHeader As Panel
     Private pnlQuickActions As Panel
+    Private pnlAdminActions As FlowLayoutPanel
     Private lblTitle As Label
 
     Public Sub New()
@@ -68,7 +69,7 @@ Public Class Dashboard
 
         pnlQuickActions = New Panel With {
             .Location = New Point(30, 170),
-            .Size = New Size(1100, 600),
+            .Size = New Size(1100, 760),
             .BackColor = Color.Transparent
         }
 
@@ -97,9 +98,9 @@ Public Class Dashboard
 
         Dim actionPanel As New FlowLayoutPanel With {
             .Location = New Point(0, 190),
-            .Size = New Size(1040, 100),
+            .Size = New Size(1040, 150),
             .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = False,
+            .WrapContents = True,
             .BackColor = Color.Transparent
         }
 
@@ -124,7 +125,7 @@ Public Class Dashboard
         pnlQuickActions.Controls.Add(actionPanel)
 
         Dim statGrid As New TableLayoutPanel With {
-            .Location = New Point(0, 298),
+            .Location = New Point(0, 358),
             .Size = New Size(1040, 260),
             .ColumnCount = 2,
             .RowCount = 2,
@@ -145,25 +146,19 @@ Public Class Dashboard
         pnlQuickActions.Controls.Add(statGrid)
         Me.Controls.Add(pnlQuickActions)
 
-        Dim btnExitUI As Button = ModernTheme.MakeSecondaryButton("Exit System")
-        btnExitUI.Location = New Point(930, 560)
-        btnExitUI.Width = 100
-        btnExitUI.Height = 38
-        btnExitUI.ForeColor = ModernTheme.Danger
-        AddHandler btnExitUI.Click, AddressOf btnExit_Click
-        pnlQuickActions.Controls.Add(btnExitUI)
+        pnlAdminActions = New FlowLayoutPanel With {
+            .Location = New Point(0, 640),
+            .Size = New Size(1040, 115),
+            .FlowDirection = FlowDirection.LeftToRight,
+            .WrapContents = True,
+            .BackColor = Color.Transparent,
+            .Padding = New Padding(0, 8, 0, 0)
+        }
+        pnlQuickActions.Controls.Add(pnlAdminActions)
 
-        Dim btnPayment As Button = ModernTheme.MakePrimaryButton("Record Payment")
-        btnPayment.Location = New Point(790, 560)
-        btnPayment.Width = 125
-        btnPayment.Height = 38
-        btnPayment.Visible = SecurityContext.HasPermission("PAYMENT_MANAGE")
-        AddHandler btnPayment.Click, Sub(sender, e)
-                                        Using paymentForm As New PaymentForm()
-                                            paymentForm.ShowDialog()
-                                        End Using
-                                    End Sub
-        pnlQuickActions.Controls.Add(btnPayment)
+        AddDashboardAction("Record Payment", 0, 0, SecurityContext.HasPermission("PAYMENT_MANAGE"), Sub()
+            OpenDialog(Function() New PaymentForm())
+        End Sub)
 
         AddDashboardAction("Users & Roles", 30, 610, SecurityContext.HasPermission("USER_MANAGE"), Sub()
             Using form As New UserManagementForm()
@@ -191,20 +186,38 @@ Public Class Dashboard
             End Using
         End Sub)
         AddDashboardAction("Database Backup", 805, 610, SecurityContext.HasRole("Admin"), Sub()
-            Using form As New BackupForm()
-                form.ShowDialog()
-            End Using
+            OpenDialog(Function() New BackupForm())
         End Sub)
+
+        Dim btnExitUI As Button = ModernTheme.MakeSecondaryButton("Exit System")
+        btnExitUI.Width = 145
+        btnExitUI.Height = 38
+        btnExitUI.ForeColor = ModernTheme.Danger
+        AddHandler btnExitUI.Click, AddressOf btnExit_Click
+        pnlAdminActions.Controls.Add(btnExitUI)
     End Sub
 
     Private Sub AddDashboardAction(text As String, x As Integer, y As Integer, visible As Boolean, action As Action)
         Dim button As Button = ModernTheme.MakeSecondaryButton(text)
-        button.Location = New Point(x, y)
         button.Width = 145
         button.Height = 38
         button.Visible = visible
-        AddHandler button.Click, Sub(sender, e) action()
-        pnlQuickActions.Controls.Add(button)
+        AddHandler button.Click, Sub(sender, e)
+                                    Try
+                                        action()
+                                    Catch ex As UnauthorizedAccessException
+                                        MessageBox.Show(ex.Message, "Access denied", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                    Catch ex As Exception
+                                        MessageBox.Show("Unable to open this feature: " & ex.Message, "MIOS", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                    End Try
+                                End Sub
+        pnlAdminActions.Controls.Add(button)
+    End Sub
+
+    Private Sub OpenDialog(factory As Func(Of Form))
+        Using form As Form = factory()
+            form.ShowDialog(Me)
+        End Using
     End Sub
 
     Private Structure DashboardStats
@@ -222,7 +235,7 @@ Public Class Dashboard
                 stats.StockOnHand = Convert.ToInt32(ExecuteScalar(conn, "SELECT ISNULL(SUM(Quantity), 0) FROM mn.SpareParts"))
                 stats.PurchaseBatches = Convert.ToInt32(ExecuteScalar(conn, "SELECT COUNT(*) FROM mn.PurchaseBatch"))
                 stats.LowInventory = Convert.ToInt32(ExecuteScalar(conn, "SELECT COUNT(*) FROM mn.SpareParts WHERE Quantity <= 5"))
-                stats.SalesToday = Convert.ToDecimal(ExecuteScalar(conn, "SELECT ISNULL(SUM(ii.QuantityIssued * sp.UnitPrice), 0) FROM mn.IssuedItem ii JOIN mn.SpareParts sp ON sp.PartNumber = ii.PartNumber WHERE CAST(ii.IssueDate AS DATE) = CAST(GETDATE() AS DATE)"))
+                stats.SalesToday = Convert.ToDecimal(ExecuteScalar(conn, "SELECT ISNULL(SUM(TotalAmount), 0) FROM mn.SalesInvoice WHERE CAST(InvoiceDate AS DATE) = CAST(GETDATE() AS DATE)"))
             End Using
         Catch ex As Exception
             MessageBox.Show("Unable to load dashboard statistics: " & ex.Message, "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -287,35 +300,35 @@ Public Class Dashboard
     End Function
 
     Private Sub btnAddPart_Click(sender As Object, e As EventArgs)
-        Dim frm As New Add_SparePart() : frm.ShowDialog()
+        OpenDialog(Function() New Add_SparePart())
     End Sub
 
     Private Sub btnIssuePart_Click(sender As Object, e As EventArgs)
-        Dim frm As New Issue_SparePart() : frm.ShowDialog()
+        OpenDialog(Function() New Issue_SparePart())
     End Sub
 
     Private Sub btnStockCard_Click(sender As Object, e As EventArgs)
-        Dim frm As New View_StockCard() : frm.ShowDialog()
+        OpenDialog(Function() New View_StockCard())
     End Sub
 
     Private Sub btnInventory_Click(sender As Object, e As EventArgs)
-        Dim frm As New View_Inventory() : frm.ShowDialog()
+        OpenDialog(Function() New View_Inventory())
     End Sub
 
     Private Sub btnPurchaseBatch_Click(sender As Object, e As EventArgs)
-        Dim frm As New View_PurchaseBatch() : frm.ShowDialog()
+        OpenDialog(Function() New View_PurchaseBatch())
     End Sub
 
     Private Sub btnSoldItem_Click(sender As Object, e As EventArgs)
-        Dim frm As New View_SoldItem() : frm.ShowDialog()
+        OpenDialog(Function() New View_SoldItem())
     End Sub
 
     Private Sub btnSupplier_Click(sender As Object, e As EventArgs)
-        Dim frm As New Supplier() : frm.ShowDialog()
+        OpenDialog(Function() New Supplier())
     End Sub
 
     Private Sub btnCustomer_Click(sender As Object, e As EventArgs)
-        Dim frm As New Customer() : frm.ShowDialog()
+        OpenDialog(Function() New Customer())
     End Sub
 
     Private Sub btnExit_Click(sender As Object, e As EventArgs)

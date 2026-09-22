@@ -20,6 +20,11 @@ Public Class Add_SparePart
     Private savedPhoneNumber As String = ""
 
     Private Sub Add_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        If Not SecurityContext.HasPermission("INVENTORY_RECEIVE") Then
+            MessageBox.Show("Your role cannot receive inventory.", "Access denied", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Me.Close()
+            Return
+        End If
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Add Spare Parts"
         Me.StartPosition = FormStartPosition.CenterScreen
