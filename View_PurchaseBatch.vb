@@ -41,74 +41,59 @@ Public Class View_PurchaseBatch
     End Sub
     Private Sub SetupForm()
         Me.Text = "Purchase Batch Tracking (FIFO)"
-        Me.Size = New Size(1100, 650)
+        Me.Size = New Size(1080, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.BackColor = Color.FromArgb(244, 246, 248)
-        ModernTheme.EnableVerticalScroll(Me, 720)
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
+        ModernTheme.EnableVerticalScroll(Me, 700)
 
-        ' Title
         Dim lblTitle As New Label With {
-            .Text = "PURCHASE BATCHES - FIFO TRACKING",
-            .Font = New Font("Segoe UI", 16, FontStyle.Bold),
-            .ForeColor = Color.FromArgb(21, 101, 192),
-            .Location = New Point(20, 15),
-            .Size = New Size(600, 35)
+            .Text = "Purchase batches",
+            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(22, 18),
+            .Size = New Size(400, 34)
         }
         Me.Controls.Add(lblTitle)
 
-        ' Search Panel
         Dim pnlSearch As New Panel With {
-            .Location = New Point(20, 60),
-            .Size = New Size(1045, 60),
-            .BackColor = Color.White,
-            .BorderStyle = BorderStyle.None
+            .Location = New Point(22, 64),
+            .Size = New Size(1010, 52),
+            .BackColor = Color.White
         }
-
-        Dim lblSearch As New Label With {
+        Dim lblPart As New Label With {
             .Text = "Part Number:",
-            .Location = New Point(15, 20),
-            .Size = New Size(100, 20),
-            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+            .Location = New Point(12, 8),
+            .Size = New Size(100, 30),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
-        pnlSearch.Controls.Add(lblSearch)
+        pnlSearch.Controls.Add(lblPart)
 
-        txtSearch = New TextBox With {
-            .Location = New Point(120, 18),
-            .Size = New Size(300, 25),
-            .Font = New Font("Segoe UI", 10)
-        }
+        txtSearch = ModernTheme.MakeTextBox()
+        txtSearch.Location = New Point(120, 8)
+        txtSearch.Width = 300
         AddHandler txtSearch.KeyPress, AddressOf txtSearch_KeyPress
         pnlSearch.Controls.Add(txtSearch)
 
-        btnSearch = New Button With {
-            .Text = "Search",
-            .Location = New Point(430, 15),
-            .Size = New Size(120, 32),
-            .BackColor = Color.FromArgb(59, 130, 246),
-            .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat,
-            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnSearch = ModernTheme.MakePrimaryButton("Search")
+        btnSearch.Location = New Point(430, 8)
+        btnSearch.Width = 120
         AddHandler btnSearch.Click, AddressOf btnSearch_Click
         pnlSearch.Controls.Add(btnSearch)
 
-        btnClear = New Button With {
-            .Text = "Reset",
-            .Location = New Point(560, 15),
-            .Size = New Size(100, 32),
-            .BackColor = Color.FromArgb(108, 117, 125),
-            .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat,
-            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnClear = ModernTheme.MakeSecondaryButton("Clear all")
+        btnClear.Location = New Point(560, 8)
+        btnClear.Width = 120
+        btnClear.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnClear.Click, AddressOf btnClear_Click
         pnlSearch.Controls.Add(btnClear)
         Me.Controls.Add(pnlSearch)
 
-        ' THE TABLE (DataGridView) - FULL FIT
         dgvBatches = New DataGridView With {
-            .Location = New Point(20, 140),
-            .Size = New Size(1045, 350),
+            .Location = New Point(22, 130),
+            .Size = New Size(1010, 400),
             .BackgroundColor = Color.White,
             .BorderStyle = BorderStyle.None,
             .AllowUserToAddRows = False,
@@ -116,9 +101,10 @@ Public Class View_PurchaseBatch
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .RowHeadersVisible = False,
             .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-            .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = Color.FromArgb(245, 247, 250)},
+            .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = ModernTheme.SurfaceAlt},
             .Font = New Font("Segoe UI", 10)
         }
+        ModernTheme.StyleGrid(dgvBatches)
 
         dgvBatches.Columns.Add("BatchID", "Batch ID")
         dgvBatches.Columns.Add("PartNumber", "Part Number")
@@ -145,34 +131,25 @@ Public Class View_PurchaseBatch
 
         Me.Controls.Add(dgvBatches)
 
-        ' Statistics Label
         lblStats = New Label With {
-            .Location = New Point(20, 500),
-            .Size = New Size(1045, 30),
+            .Location = New Point(22, 538),
+            .Size = New Size(1010, 30),
             .Font = New Font("Segoe UI", 10, FontStyle.Bold),
-            .ForeColor = Color.FromArgb(40, 40, 40),
-            .BackColor = Color.Transparent
+            .ForeColor = ModernTheme.MutedText
         }
         Me.Controls.Add(lblStats)
 
-        ' Bottom Action Panel
-        Dim pnlActions As New Panel With {.Location = New Point(20, 540), .Size = New Size(1045, 50)}
-
-        btnExport = New Button With {
-            .Text = "Export to CSV", .Location = New Point(0, 5), .Size = New Size(130, 35),
-            .BackColor = Color.FromArgb(34, 197, 94), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnExport = ModernTheme.MakePrimaryButton("Export to CSV")
+        btnExport.Location = New Point(870, 570)
+        btnExport.Width = 160
         AddHandler btnExport.Click, AddressOf btnExport_Click
-        pnlActions.Controls.Add(btnExport)
+        Me.Controls.Add(btnExport)
 
-        Dim btnClose As New Button With {
-            .Text = "Back to Menu", .Location = New Point(140, 5), .Size = New Size(120, 35),
-            .BackColor = Color.White, .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Back to dashboard")
+        btnClose.Location = New Point(22, 570)
+        btnClose.Width = 180
         AddHandler btnClose.Click, Sub() Me.Close()
-        pnlActions.Controls.Add(btnClose)
-
-        Me.Controls.Add(pnlActions)
+        Me.Controls.Add(btnClose)
     End Sub
 
 
@@ -231,7 +208,7 @@ Public Class View_PurchaseBatch
             If b.QuantityRemaining = 0 Then
                 dgvBatches.Rows(rowIndex).DefaultCellStyle.ForeColor = Color.Gray
             ElseIf b.QuantityRemaining < (b.QuantityPurchased * 0.2) Then
-                dgvBatches.Rows(rowIndex).Cells("QuantityRemaining").Style.BackColor = Color.MistyRose
+                dgvBatches.Rows(rowIndex).Cells("QuantityRemaining").Style.SelectionBackColor = Color.MistyRose
             End If
         Next
     End Sub

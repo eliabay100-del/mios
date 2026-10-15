@@ -43,74 +43,103 @@ Public Class View_SoldItem
 
     Private Sub SetupForm()
         Me.Text = "Sales & Issues Tracking"
-        Me.Size = New Size(1150, 650)
+        Me.Size = New Size(1080, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.BackColor = Color.FromArgb(244, 246, 248)
-        ModernTheme.EnableVerticalScroll(Me, 720)
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
+        ModernTheme.EnableVerticalScroll(Me, 700)
 
         ' Title
         Dim lblTitle As New Label With {
-            .Text = "ISSUED PARTS / SOLD ITEMS",
-            .Font = New Font("Segoe UI", 16, FontStyle.Bold),
-            .ForeColor = Color.FromArgb(21, 101, 192),
-            .Location = New Point(20, 15),
-            .Size = New Size(500, 35)
+            .Text = "Sales & issues tracking",
+            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(22, 18),
+            .Size = New Size(400, 34)
         }
         Me.Controls.Add(lblTitle)
 
-        ' Filter Panel
+        ' Filter bar 1 - part number search + actions
         Dim pnlFilter As New Panel With {
-            .Location = New Point(20, 60),
-            .Size = New Size(1095, 70),
-            .BackColor = Color.White,
-            .BorderStyle = BorderStyle.None
+            .Location = New Point(22, 64),
+            .Size = New Size(1010, 52),
+            .BackColor = Color.White
         }
 
-        ' Part Number Search
-        Dim lblPart As New Label With {.Text = "Part Number:", .Location = New Point(15, 25), .Size = New Size(90, 20), .Font = New Font("Segoe UI", 9, FontStyle.Bold)}
-        txtPartNumber = New TextBox With {.Location = New Point(105, 22), .Size = New Size(140, 25)}
+        Dim lblPart As New Label With {
+            .Text = "Part Number:",
+            .Location = New Point(12, 8),
+            .Size = New Size(100, 30),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
         pnlFilter.Controls.Add(lblPart)
+
+        txtPartNumber = ModernTheme.MakeTextBox()
+        txtPartNumber.Location = New Point(120, 8)
+        txtPartNumber.Width = 300
         pnlFilter.Controls.Add(txtPartNumber)
 
-        ' Phone Search
-        Dim lblPhone As New Label With {.Text = "Phone:", .Location = New Point(260, 25), .Size = New Size(50, 20), .Font = New Font("Segoe UI", 9, FontStyle.Bold)}
-        txtPhoneNumber = New TextBox With {.Location = New Point(315, 22), .Size = New Size(140, 25)}
-        pnlFilter.Controls.Add(lblPhone)
-        pnlFilter.Controls.Add(txtPhoneNumber)
-
-        ' Date Picker
-        Dim lblDate As New Label With {.Text = "Date:", .Location = New Point(470, 25), .Size = New Size(40, 20), .Font = New Font("Segoe UI", 9, FontStyle.Bold)}
-        dtpDate = New DateTimePicker With {
-            .Location = New Point(515, 22),
-            .Size = New Size(130, 25),
-            .Format = DateTimePickerFormat.Short,
-            .ShowCheckBox = True,
-            .Checked = False
-        }
-        pnlFilter.Controls.Add(lblDate)
-        pnlFilter.Controls.Add(dtpDate)
-
-        ' Search Buttons
-        btnSearch = New Button With {
-            .Text = "Search", .Location = New Point(660, 18), .Size = New Size(100, 32),
-            .BackColor = Color.FromArgb(59, 130, 246), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnSearch = ModernTheme.MakePrimaryButton("Search")
+        btnSearch.Location = New Point(430, 8)
+        btnSearch.Width = 120
         AddHandler btnSearch.Click, AddressOf btnSearch_Click
         pnlFilter.Controls.Add(btnSearch)
 
-        btnClear = New Button With {
-            .Text = "Reset", .Location = New Point(770, 18), .Size = New Size(90, 32),
-            .BackColor = Color.FromArgb(108, 117, 125), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnClear = ModernTheme.MakeSecondaryButton("Clear all")
+        btnClear.Location = New Point(560, 8)
+        btnClear.Width = 120
+        btnClear.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnClear.Click, AddressOf btnClear_Click
         pnlFilter.Controls.Add(btnClear)
-
         Me.Controls.Add(pnlFilter)
+
+        ' Filter bar 2 - phone + date
+        Dim pnlFilter2 As New Panel With {
+            .Location = New Point(22, 124),
+            .Size = New Size(1010, 52),
+            .BackColor = Color.White
+        }
+
+        Dim lblPhone As New Label With {
+            .Text = "Phone:",
+            .Location = New Point(12, 8),
+            .Size = New Size(60, 30),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
+        pnlFilter2.Controls.Add(lblPhone)
+
+        txtPhoneNumber = ModernTheme.MakeTextBox()
+        txtPhoneNumber.Location = New Point(80, 8)
+        txtPhoneNumber.Width = 260
+        pnlFilter2.Controls.Add(txtPhoneNumber)
+
+        Dim lblDate As New Label With {
+            .Text = "Date:",
+            .Location = New Point(350, 8),
+            .Size = New Size(50, 30),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
+        pnlFilter2.Controls.Add(lblDate)
+
+        dtpDate = New DateTimePicker With {
+            .Location = New Point(408, 9),
+            .Size = New Size(170, 34),
+            .Format = DateTimePickerFormat.Short,
+            .ShowCheckBox = True,
+            .Checked = False,
+            .Font = New Font("Segoe UI", 10)
+        }
+        pnlFilter2.Controls.Add(dtpDate)
+        Me.Controls.Add(pnlFilter2)
 
         ' THE TABLE (DataGridView) - FULL FIT
         dgvSoldItems = New DataGridView With {
-            .Location = New Point(20, 150),
-            .Size = New Size(1095, 340),
+            .Location = New Point(22, 186),
+            .Size = New Size(1010, 360),
             .BackgroundColor = Color.White,
             .BorderStyle = BorderStyle.None,
             .AllowUserToAddRows = False,
@@ -118,9 +147,10 @@ Public Class View_SoldItem
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .RowHeadersVisible = False,
             .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-            .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = Color.FromArgb(245, 247, 250)},
+            .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = ModernTheme.SurfaceAlt},
             .Font = New Font("Segoe UI", 10)
         }
+        ModernTheme.StyleGrid(dgvSoldItems)
 
         dgvSoldItems.Columns.Add("IssueDate", "Date Issued")
         dgvSoldItems.Columns.Add("PartNumber", "Part Number")
@@ -149,31 +179,25 @@ Public Class View_SoldItem
 
         ' Statistics Label
         lblStats = New Label With {
-            .Location = New Point(20, 500),
-            .Size = New Size(1095, 30),
-            .Font = New Font("Segoe UI", 11, FontStyle.Bold),
-            .ForeColor = Color.FromArgb(40, 40, 40)
+            .Location = New Point(22, 552),
+            .Size = New Size(1010, 30),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
         Me.Controls.Add(lblStats)
 
-        ' Action Panel
-        Dim pnlActions As New Panel With {.Location = New Point(20, 540), .Size = New Size(1095, 50)}
-
-        btnExport = New Button With {
-            .Text = "Export to CSV", .Location = New Point(0, 5), .Size = New Size(130, 35),
-            .BackColor = Color.FromArgb(34, 197, 94), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        ' Bottom action row
+        btnExport = ModernTheme.MakePrimaryButton("Export to CSV")
+        btnExport.Location = New Point(870, 590)
+        btnExport.Width = 160
         AddHandler btnExport.Click, AddressOf btnExport_Click
-        pnlActions.Controls.Add(btnExport)
+        Me.Controls.Add(btnExport)
 
-        Dim btnClose As New Button With {
-            .Text = "Back to Menu", .Location = New Point(140, 5), .Size = New Size(120, 35),
-            .BackColor = Color.White, .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Back to dashboard")
+        btnClose.Location = New Point(22, 590)
+        btnClose.Width = 180
         AddHandler btnClose.Click, Sub() Me.Close()
-        pnlActions.Controls.Add(btnClose)
-
-        Me.Controls.Add(pnlActions)
+        Me.Controls.Add(btnClose)
     End Sub
 
 
@@ -253,7 +277,7 @@ Public Class View_SoldItem
         If e.RowIndex >= 0 AndAlso e.ColumnIndex = 0 Then
             Dim issueDate As DateTime = CDate(dgvSoldItems.Rows(e.RowIndex).Cells("IssueDate").Value)
             If issueDate.Date = DateTime.Now.Date Then
-                dgvSoldItems.Rows(e.RowIndex).DefaultCellStyle.BackColor = Color.LightGreen
+                dgvSoldItems.Rows(e.RowIndex).DefaultCellStyle.SelectionBackColor = Color.LightGreen
             End If
         End If
     End Sub

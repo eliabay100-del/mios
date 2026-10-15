@@ -26,8 +26,8 @@ Public Class View_StockCard
     Private btnSearch As Button
     Private btnClear As Button
     Private btnExport As Button
+    Private btnClose As Button
     Private lblError As Label
-    Private pnlActions As Panel
 
     Private Sub View_StockCard_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ModernTheme.ApplyWindowTheme(Me)
@@ -38,74 +38,63 @@ Public Class View_StockCard
     ' ============ UI SETUP (FULL FIT LAYOUT) ============
     Private Sub SetupForm()
         Me.Text = "Stock Card Audit Trail"
-        Me.Size = New Size(1100, 650)
+        Me.Size = New Size(1080, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.BackColor = Color.FromArgb(244, 246, 248)
-        ModernTheme.EnableVerticalScroll(Me, 720)
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
+        ModernTheme.EnableVerticalScroll(Me, 700)
 
         ' 1. Title
         Dim lblTitle As New Label With {
-            .Text = "STOCK CARD - AUDIT TRAIL",
-            .Font = New Font("Segoe UI", 16, FontStyle.Bold),
-            .ForeColor = Color.FromArgb(21, 101, 192),
-            .Location = New Point(20, 15),
-            .Size = New Size(500, 35)
+            .Text = "Stock card audit trail",
+            .Font = New Font("Segoe UI", 24, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(22, 18),
+            .Size = New Size(400, 34)
         }
         Me.Controls.Add(lblTitle)
 
         ' 2. Search Panel
         Dim pnlSearch As New Panel With {
-            .Location = New Point(20, 60),
-            .Size = New Size(1045, 60),
-            .BackColor = Color.White,
-            .BorderStyle = BorderStyle.None
+            .Location = New Point(22, 64),
+            .Size = New Size(1010, 52),
+            .BackColor = Color.White
         }
 
         Dim lblPart As New Label With {
             .Text = "Part Number:",
-            .Location = New Point(15, 20),
-            .Size = New Size(100, 20),
-            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+            .Location = New Point(12, 8),
+            .Size = New Size(100, 30),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
         }
         pnlSearch.Controls.Add(lblPart)
 
-        txtPartNumber = New TextBox With {
-            .Location = New Point(120, 18),
-            .Size = New Size(300, 25),
-            .Font = New Font("Segoe UI", 10)
-        }
+        txtPartNumber = ModernTheme.MakeTextBox()
+        txtPartNumber.Location = New Point(120, 8)
+        txtPartNumber.Width = 300
         AddHandler txtPartNumber.KeyPress, AddressOf txtPartNumber_KeyPress
         pnlSearch.Controls.Add(txtPartNumber)
 
-        btnSearch = New Button With {
-            .Text = "Search",
-            .Location = New Point(430, 15),
-            .Size = New Size(120, 32),
-            .BackColor = Color.FromArgb(59, 130, 246),
-            .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat,
-            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnSearch = ModernTheme.MakePrimaryButton("Search")
+        btnSearch.Location = New Point(430, 8)
+        btnSearch.Width = 120
         AddHandler btnSearch.Click, AddressOf btnSearch_Click
         pnlSearch.Controls.Add(btnSearch)
 
-        btnClear = New Button With {
-            .Text = "Clear",
-            .Location = New Point(560, 15),
-            .Size = New Size(100, 32),
-            .BackColor = Color.FromArgb(108, 117, 125),
-            .ForeColor = Color.White,
-            .FlatStyle = FlatStyle.Flat,
-            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        btnClear = ModernTheme.MakeSecondaryButton("Clear all")
+        btnClear.Location = New Point(560, 8)
+        btnClear.Width = 120
+        btnClear.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnClear.Click, AddressOf btnClear_Click
         pnlSearch.Controls.Add(btnClear)
         Me.Controls.Add(pnlSearch)
 
         ' 3. Error Message
         lblError = New Label With {
-            .Location = New Point(20, 125),
-            .Size = New Size(1045, 25),
+            .Location = New Point(22, 130),
+            .Size = New Size(1010, 25),
             .Font = New Font("Segoe UI", 9, FontStyle.Italic),
             .ForeColor = Color.Red,
             .Visible = False
@@ -114,8 +103,8 @@ Public Class View_StockCard
 
         ' 4. THE TABLE (DataGridView) - FULL FIT
         dgvStockCard = New DataGridView With {
-            .Location = New Point(20, 155),
-            .Size = New Size(1045, 380),
+            .Location = New Point(22, 160),
+            .Size = New Size(1010, 360),
             .BackgroundColor = Color.White,
             .BorderStyle = BorderStyle.None,
             .AllowUserToAddRows = False,
@@ -123,9 +112,10 @@ Public Class View_StockCard
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .RowHeadersVisible = False,
             .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-            .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = Color.FromArgb(245, 247, 250)},
+            .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = ModernTheme.SurfaceAlt},
             .Font = New Font("Segoe UI", 10)
         }
+        ModernTheme.StyleGrid(dgvStockCard)
 
         dgvStockCard.Columns.Add("MovementDate", "Date")
         dgvStockCard.Columns.Add("PartNumber", "Part Number")
@@ -152,24 +142,18 @@ Public Class View_StockCard
         AddHandler dgvStockCard.CellFormatting, AddressOf dgvStockCard_CellFormatting
         Me.Controls.Add(dgvStockCard)
 
-        ' 5. Bottom Action Panel
-        pnlActions = New Panel With {.Location = New Point(20, 545), .Size = New Size(1045, 50), .Visible = False, .Name = "pnlActions"}
-
-        btnExport = New Button With {
-            .Text = "Export to CSV", .Location = New Point(0, 5), .Size = New Size(130, 35),
-            .BackColor = Color.FromArgb(34, 197, 94), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9, FontStyle.Bold)
-        }
+        ' 5. Bottom action row
+        btnExport = ModernTheme.MakePrimaryButton("Export to CSV")
+        btnExport.Location = New Point(870, 570)
+        btnExport.Width = 160
         AddHandler btnExport.Click, AddressOf btnExport_Click
-        pnlActions.Controls.Add(btnExport)
+        Me.Controls.Add(btnExport)
 
-        Dim btnClose As New Button With {
-            .Text = "Back to Menu", .Location = New Point(140, 5), .Size = New Size(120, 35),
-            .BackColor = Color.White, .ForeColor = Color.Black, .FlatStyle = FlatStyle.Flat
-        }
+        btnClose = ModernTheme.MakeSecondaryButton("Back to dashboard")
+        btnClose.Location = New Point(22, 570)
+        btnClose.Width = 180
         AddHandler btnClose.Click, Sub() Me.Close()
-        pnlActions.Controls.Add(btnClose)
-
-        Me.Controls.Add(pnlActions)
+        Me.Controls.Add(btnClose)
     End Sub
 
     ' ============ DATA METHODS ============
@@ -181,7 +165,8 @@ Public Class View_StockCard
             lblError.Text = "Part Number '" & partNumber & "' not found in Master List."
             lblError.Visible = True
             dgvStockCard.Visible = False
-            pnlActions.Visible = False
+            btnExport.Visible = False
+            btnClose.Visible = False
             Return
         End If
 
@@ -191,12 +176,14 @@ Public Class View_StockCard
         If filteredArray.Length > 0 Then
             DisplayStockMovements(filteredArray)
             dgvStockCard.Visible = True
-            pnlActions.Visible = True
+            btnExport.Visible = True
+            btnClose.Visible = True
         Else
             lblError.Text = "No transaction records found."
             lblError.Visible = True
             dgvStockCard.Visible = False
-            pnlActions.Visible = False
+            btnExport.Visible = False
+            btnClose.Visible = False
         End If
     End Sub
 
@@ -228,9 +215,9 @@ Public Class View_StockCard
                         End While
                     End Using
                 End Using
-            End Using
 
-            CalculateRunningBalance(list)
+                CalculateRunningBalance(list)
+            End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load stock movements", ex)
             MessageBox.Show("Database Connection Error: " & ex.Message)

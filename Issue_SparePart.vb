@@ -250,6 +250,10 @@ Public Class Issue_SparePart
         If target < 240 Then target = 240
 
         If target <> Me.Height Then Me.Height = target
+
+        ' Rebuilding a section leaves the previous section's scroll offset behind,
+        ' which would cut the top card off. Pin the view back to the title.
+        If AutoScrollPosition.Y <> 0 Then AutoScrollPosition = New Point(0, 0)
     End Sub
 
     ' =============== CHECK CUSTOMER ===============
