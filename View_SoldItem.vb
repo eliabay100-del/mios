@@ -191,41 +191,43 @@ Public Class View_SoldItem
     Private Function GetSoldItemsFromDB(partFilter As String, phoneFilter As String, dateFilter As Date?) As SoldItem()
         Dim list As New List(Of SoldItem)
         Try
-            DBModule.OpenConnection()
-            Dim query As String = "SELECT ii.IssueDate, ii.PartNumber, ii.QuantityIssued, sp.UnitPrice, " &
-                                 "c.CustomerName, c.Phone FROM mn.IssuedItem ii " &
-                                 "JOIN mn.SpareParts sp ON ii.PartNumber = sp.PartNumber " &
-                                 "JOIN mn.Customer c ON ii.CustomerID = c.CustomerID"
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Dim query As String = "SELECT ii.IssueDate, ii.PartNumber, ii.QuantityIssued, sp.UnitPrice, " &
+                                     "c.CustomerName, c.Phone FROM mn.IssuedItem ii " &
+                                     "JOIN mn.SpareParts sp ON ii.PartNumber = sp.PartNumber " &
+                                     "JOIN mn.Customer c ON ii.CustomerID = c.CustomerID"
 
-            Dim whereClauses As New List(Of String)
-            If Not String.IsNullOrEmpty(partFilter) Then whereClauses.Add("ii.PartNumber LIKE @p")
-            If Not String.IsNullOrEmpty(phoneFilter) Then whereClauses.Add("c.Phone LIKE @phone")
-            If dateFilter.HasValue Then whereClauses.Add("CAST(ii.IssueDate AS DATE) = @date")
+                Dim whereClauses As New List(Of String)
+                If Not String.IsNullOrEmpty(partFilter) Then whereClauses.Add("ii.PartNumber LIKE @p")
+                If Not String.IsNullOrEmpty(phoneFilter) Then whereClauses.Add("c.Phone LIKE @phone")
+                If dateFilter.HasValue Then whereClauses.Add("CAST(ii.IssueDate AS DATE) = @date")
 
-            If whereClauses.Count > 0 Then query &= " WHERE " & String.Join(" AND ", whereClauses.ToArray())
-            query &= " ORDER BY ii.IssueDate DESC"
+                If whereClauses.Count > 0 Then query &= " WHERE " & String.Join(" AND ", whereClauses.ToArray())
+                query &= " ORDER BY ii.IssueDate DESC"
 
-            Using cmd As New SqlCommand(query, DBModule.Conn)
-                If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", "%" & partFilter & "%")
-                If Not String.IsNullOrEmpty(phoneFilter) Then cmd.Parameters.AddWithValue("@phone", "%" & phoneFilter & "%")
-                If dateFilter.HasValue Then cmd.Parameters.AddWithValue("@date", dateFilter.Value)
+                Using cmd As New SqlCommand(query, conn)
+                    If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", "%" & partFilter & "%")
+                    If Not String.IsNullOrEmpty(phoneFilter) Then cmd.Parameters.AddWithValue("@phone", "%" & phoneFilter & "%")
+                    If dateFilter.HasValue Then cmd.Parameters.AddWithValue("@date", dateFilter.Value)
 
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        list.Add(New SoldItem With {
-                            .IssueDate = CDate(reader("IssueDate")),
-                            .PartNumber = reader("PartNumber").ToString(),
-                            .QuantityIssued = CInt(reader("QuantityIssued")),
-                            .SellingPrice = CDec(reader("UnitPrice")),
-                            .CustomerName = reader("CustomerName").ToString(),
-                            .PhoneNumber = If(reader("Phone") Is DBNull.Value, "N/A", reader("Phone").ToString()),
-                            .Remarks = "Sold"
-                        })
-                    End While
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            list.Add(New SoldItem With {
+                                .IssueDate = CDate(reader("IssueDate")),
+                                .PartNumber = reader("PartNumber").ToString(),
+                                .QuantityIssued = CInt(reader("QuantityIssued")),
+                                .SellingPrice = CDec(reader("UnitPrice")),
+                                .CustomerName = reader("CustomerName").ToString(),
+                                .PhoneNumber = If(reader("Phone") Is DBNull.Value, "N/A", reader("Phone").ToString()),
+                                .Remarks = "Sold"
+                            })
+                        End While
+                    End Using
                 End Using
             End Using
-            DBModule.CloseConnection()
         Catch ex As Exception
+            AppLogger.Error("Failed to load sold items", ex)
             MessageBox.Show("Error: " & ex.Message)
         End Try
         Return list.ToArray()

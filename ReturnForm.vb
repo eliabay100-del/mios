@@ -70,11 +70,14 @@ Public Class ReturnForm
             MessageBox.Show("Return processed.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Me.Close()
         Catch ex As Exception
+            AppLogger.Error("Failed to process return", ex)
             MessageBox.Show("Unable to process return: " & ex.Message, "Return", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     Private Sub ProcessSalesReturn(conn As SqlConnection, transaction As SqlTransaction, invoiceID As Integer, quantity As Integer, amount As Decimal)
+        Dim partNumber As String = txtPartNumber.Text.Trim()
+
         Dim customerID As Integer
         Using cmd As New SqlCommand("SELECT CustomerID FROM mn.SalesInvoice WHERE InvoiceID = @id", conn, transaction)
             cmd.Parameters.AddWithValue("@id", invoiceID)
@@ -82,6 +85,11 @@ Public Class ReturnForm
             If value Is Nothing Then Throw New Exception("Sales invoice was not found.")
             customerID = Convert.ToInt32(value)
         End Using
+
+        ' Cost basis of the returned units, taken from the original sale line when
+        ' possible so the inventory/COGS reversal matches what was posted at sale.
+        Dim unitCost As Decimal = GetSoldLineCost(conn, transaction, invoiceID, partNumber)
+
         Dim returnID As Integer
         Using cmd As New SqlCommand("INSERT INTO mn.SalesReturn (InvoiceID, CustomerID, PartNumber, Quantity, UnitPrice, Reason, CreatedByUserID) OUTPUT INSERTED.SalesReturnID VALUES (@invoice, @customer, @part, @quantity, @amount, @reason, @userID)", conn, transaction)
             AddCommonParameters(cmd, quantity, amount)
@@ -89,19 +97,47 @@ Public Class ReturnForm
             cmd.Parameters.AddWithValue("@customer", customerID)
             returnID = Convert.ToInt32(cmd.ExecuteScalar())
         End Using
+
         Using cmd As New SqlCommand("UPDATE mn.SpareParts SET Quantity = Quantity + @quantity WHERE PartNumber = @part", conn, transaction)
             cmd.Parameters.AddWithValue("@quantity", quantity)
-            cmd.Parameters.AddWithValue("@part", txtPartNumber.Text.Trim())
+            cmd.Parameters.AddWithValue("@part", partNumber)
             If cmd.ExecuteNonQuery() = 0 Then Throw New Exception("Part number was not found.")
         End Using
+
+        ' Put the returned units back into the batch ledger so FIFO can issue them
+        ' again; without this the stock exists only on the master quantity.
+        InventoryService.AddBatch(conn, transaction, partNumber, quantity, unitCost, Nothing)
+
         AddStockMovement(conn, transaction, "IN", quantity, "Sales return")
+
         AccountingService.PostJournalEntry(conn, transaction, "SALES_RETURN", returnID, "Customer return", New List(Of JournalLineData) From {
             New JournalLineData With {.AccountCode = "4000", .Debit = quantity * amount, .Credit = 0},
-            New JournalLineData With {.AccountCode = "1100", .Debit = 0, .Credit = quantity * amount}
+            New JournalLineData With {.AccountCode = "1100", .Debit = 0, .Credit = quantity * amount},
+            New JournalLineData With {.AccountCode = "1200", .Debit = quantity * unitCost, .Credit = 0},
+            New JournalLineData With {.AccountCode = "5000", .Debit = 0, .Credit = quantity * unitCost}
         })
     End Sub
 
+    Private Function GetSoldLineCost(conn As SqlConnection, transaction As SqlTransaction, invoiceID As Integer, partNumber As String) As Decimal
+        Using cmd As New SqlCommand("SELECT TOP 1 UnitCost FROM mn.SalesInvoiceLine WHERE InvoiceID = @invoice AND PartNumber = @part ORDER BY InvoiceLineID DESC", conn, transaction)
+            cmd.Parameters.AddWithValue("@invoice", invoiceID)
+            cmd.Parameters.AddWithValue("@part", partNumber)
+            Dim result = cmd.ExecuteScalar()
+            If result IsNot Nothing AndAlso result IsNot DBNull.Value Then Return Convert.ToDecimal(result)
+        End Using
+
+        Using cmd As New SqlCommand("SELECT UnitPrice FROM mn.SpareParts WHERE PartNumber = @part", conn, transaction)
+            cmd.Parameters.AddWithValue("@part", partNumber)
+            Dim result = cmd.ExecuteScalar()
+            If result IsNot Nothing AndAlso result IsNot DBNull.Value Then Return Convert.ToDecimal(result)
+        End Using
+
+        Return 0D
+    End Function
+
     Private Sub ProcessPurchaseReturn(conn As SqlConnection, transaction As SqlTransaction, receiptID As Integer, quantity As Integer, amount As Decimal)
+        Dim partNumber As String = txtPartNumber.Text.Trim()
+
         Dim supplierID As Integer
         Using cmd As New SqlCommand("SELECT SupplierID FROM mn.PurchaseReceipt WHERE ReceiptID = @id", conn, transaction)
             cmd.Parameters.AddWithValue("@id", receiptID)
@@ -109,6 +145,7 @@ Public Class ReturnForm
             If value Is Nothing Then Throw New Exception("Purchase receipt was not found.")
             supplierID = Convert.ToInt32(value)
         End Using
+
         Dim returnID As Integer
         Using cmd As New SqlCommand("INSERT INTO mn.PurchaseReturn (ReceiptID, SupplierID, PartNumber, Quantity, UnitCost, Reason, CreatedByUserID) OUTPUT INSERTED.PurchaseReturnID VALUES (@receipt, @supplier, @part, @quantity, @amount, @reason, @userID)", conn, transaction)
             AddCommonParameters(cmd, quantity, amount)
@@ -116,17 +153,21 @@ Public Class ReturnForm
             cmd.Parameters.AddWithValue("@supplier", supplierID)
             returnID = Convert.ToInt32(cmd.ExecuteScalar())
         End Using
-        Using cmd As New SqlCommand("UPDATE mn.PurchaseBatch SET QuantityRemaining = QuantityRemaining - @quantity WHERE PartNumber = @part AND QuantityRemaining >= @quantity", conn, transaction)
-            cmd.Parameters.AddWithValue("@quantity", quantity)
-            cmd.Parameters.AddWithValue("@part", txtPartNumber.Text.Trim())
-            If cmd.ExecuteNonQuery() = 0 Then Throw New Exception("Not enough remaining stock in the purchase batches.")
-        End Using
+
+        ' Reduce a single batch (never every matching batch) so the FIFO ledger
+        ' is not over-consumed.
+        If Not InventoryService.ReduceNewestBatch(conn, transaction, partNumber, quantity) Then
+            Throw New Exception("Not enough remaining stock in a single purchase batch to return.")
+        End If
+
         Using cmd As New SqlCommand("UPDATE mn.SpareParts SET Quantity = Quantity - @quantity WHERE PartNumber = @part AND Quantity >= @quantity", conn, transaction)
             cmd.Parameters.AddWithValue("@quantity", quantity)
-            cmd.Parameters.AddWithValue("@part", txtPartNumber.Text.Trim())
+            cmd.Parameters.AddWithValue("@part", partNumber)
             If cmd.ExecuteNonQuery() = 0 Then Throw New Exception("Part stock could not be reduced.")
         End Using
+
         AddStockMovement(conn, transaction, "OUT", quantity, "Purchase return")
+
         AccountingService.PostJournalEntry(conn, transaction, "PURCHASE_RETURN", returnID, "Supplier return", New List(Of JournalLineData) From {
             New JournalLineData With {.AccountCode = "2000", .Debit = quantity * amount, .Credit = 0},
             New JournalLineData With {.AccountCode = "1200", .Debit = 0, .Credit = quantity * amount}
@@ -138,7 +179,7 @@ Public Class ReturnForm
         cmd.Parameters.AddWithValue("@quantity", quantity)
         cmd.Parameters.AddWithValue("@amount", amount)
         cmd.Parameters.AddWithValue("@reason", txtReason.Text.Trim())
-        cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, SecurityContext.CurrentUserID))
+        cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, CObj(SecurityContext.CurrentUserID)))
     End Sub
 
     Private Sub AddStockMovement(conn As SqlConnection, transaction As SqlTransaction, movement As String, quantity As Integer, reference As String)

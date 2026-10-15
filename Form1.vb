@@ -27,21 +27,49 @@ Public Class Dashboard
 
         InitializeDashboard()
         ModernTheme.EnableVerticalScroll(Me, 1000)
+
+        ' On small screens the dashboard scrolls. Windows Forms also scrolls the
+        ' initially focused control into view, which used to push the header (and
+        ' the logo) off the top, so pin the view to the top once the form settles.
+        AddHandler Me.Shown, Sub(s, e)
+                                 ResetScrollToTop()
+                                 Dim settle As New System.Windows.Forms.Timer With {.Interval = 250}
+                                 AddHandler settle.Tick, Sub(ts, te)
+                                                             settle.Stop()
+                                                             settle.Dispose()
+                                                             ResetScrollToTop()
+                                                         End Sub
+                                 settle.Start()
+                             End Sub
+    End Sub
+
+    ''' <summary>Scrolls the dashboard back to the very top (header/logo visible).</summary>
+    Private Sub ResetScrollToTop()
+        If AutoScrollPosition.Y <> 0 Then AutoScrollPosition = New Point(0, 0)
     End Sub
 
     Private Sub InitializeDashboard()
         pnlHeader = New Panel With {
             .Dock = DockStyle.Top,
             .Height = 140,
+            .TabIndex = 0,
             .BackColor = Color.FromArgb(255, 255, 255)
         }
+
+        Dim logo As PictureBox = ModernTheme.MakeLogo(92)
+        If logo IsNot Nothing Then
+            logo.Location = New Point(28, 24)
+            logo.BackColor = Color.White
+            pnlHeader.Controls.Add(logo)
+        End If
+        Dim contentLeft As Integer = If(logo IsNot Nothing, 138, 28)
 
         lblTitle = New Label With {
             .Text = "Inventory Management",
             .Font = New Font("Segoe UI", 28, FontStyle.Bold),
             .ForeColor = ModernTheme.PrimaryText,
             .AutoSize = True,
-            .Location = New Point(28, 48)
+            .Location = New Point(contentLeft, 40)
         }
         pnlHeader.Controls.Add(lblTitle)
 
@@ -50,51 +78,72 @@ Public Class Dashboard
             .ForeColor = ModernTheme.MutedText,
             .Font = New Font("Segoe UI", 11.0F),
             .AutoSize = True,
-            .Location = New Point(30, 94)
+            .Location = New Point(contentLeft + 2, 88)
         }
         pnlHeader.Controls.Add(subtitle)
 
-        Dim userChip As New Panel With {
-            .Size = New Size(168, 42),
-            .Location = New Point(Me.Width - 208, 48),
-            .BackColor = ModernTheme.SurfaceAlt,
-            .BorderStyle = BorderStyle.None
-        }
-        Dim userText As New Label With {
-            .Text = If(String.IsNullOrEmpty(Username), "Admin User", Username) & "  /  " & If(String.IsNullOrEmpty(SecurityContext.CurrentRole), "User", SecurityContext.CurrentRole),
-            .ForeColor = ModernTheme.PrimaryText,
-            .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
-            .AutoSize = True,
-            .Location = New Point(18, 11)
-        }
-        userChip.Controls.Add(userText)
-        pnlHeader.Controls.Add(userChip)
-
-        Dim btnHeaderExit As Button = ModernTheme.MakeSecondaryButton("Exit")
-        btnHeaderExit.Location = New Point(820, 48)
-        btnHeaderExit.Size = New Size(110, 42)
+        Dim btnHeaderExit As Button = ModernTheme.MakeDangerButton("Exit")
+        btnHeaderExit.Size = New Size(96, 42)
         btnHeaderExit.Tag = "HeaderExit"
-        btnHeaderExit.BackColor = ModernTheme.Danger
-        btnHeaderExit.ForeColor = Color.White
-        btnHeaderExit.FlatAppearance.BorderColor = ModernTheme.Danger
-        btnHeaderExit.FlatAppearance.MouseOverBackColor = Color.FromArgb(190, 45, 45)
-        btnHeaderExit.FlatAppearance.MouseDownBackColor = Color.FromArgb(165, 35, 35)
         AddHandler btnHeaderExit.Click, AddressOf btnExit_Click
-        pnlHeader.Controls.Add(btnHeaderExit)
 
         btnLanguage = ModernTheme.MakeSecondaryButton("አማርኛ")
-        btnLanguage.Location = New Point(700, 48)
         btnLanguage.Size = New Size(110, 42)
         AddHandler btnLanguage.Click, Sub(sender, e)
                                         LanguageService.Toggle()
                                         btnLanguage.Text = If(LanguageService.IsAmharic, "English", "አማርኛ")
                                     End Sub
-        pnlHeader.Controls.Add(btnLanguage)
+
+        ' The user chip is a button that opens account and administrator actions.
+        ' SecurityContext is the source of truth: the Dashboard's own Username
+        ' property is assigned by the caller after this constructor has run.
+        Dim displayUser As String = SecurityContext.CurrentUsername
+        If String.IsNullOrEmpty(displayUser) Then displayUser = Username
+        If String.IsNullOrEmpty(displayUser) Then displayUser = "Admin User"
+        Dim displayRole As String = SecurityContext.CurrentRole
+        If String.IsNullOrEmpty(displayRole) Then displayRole = "User"
+
+        Dim btnUserMenu As Button = ModernTheme.MakeSecondaryButton(
+            displayUser & "  /  " & displayRole & "  ▾")
+        btnUserMenu.AutoSize = False
+        btnUserMenu.Size = New Size(236, 42)
+        btnUserMenu.Margin = New Padding(8, 3, 8, 3)
+
+        Dim userMenu As New ContextMenuStrip With {.Font = New Font("Segoe UI", 9.5F)}
+        Dim miUsers As New ToolStripMenuItem("Users && Roles")
+        miUsers.Visible = SecurityContext.HasPermission("USER_MANAGE")
+        AddHandler miUsers.Click, Sub(sender, e) RunFeature(Sub() OpenDialog(Function() New UserManagementForm()))
+        Dim miPassword As New ToolStripMenuItem("Change my password")
+        AddHandler miPassword.Click, Sub(sender, e) RunFeature(Sub() OpenDialog(Function() New ChangePasswordForm()))
+        Dim miBackup As New ToolStripMenuItem("Database backup")
+        miBackup.Visible = SecurityContext.HasRole("Admin")
+        AddHandler miBackup.Click, Sub(sender, e) RunFeature(Sub() OpenDialog(Function() New BackupForm()))
+        userMenu.Items.Add(miUsers)
+        userMenu.Items.Add(miPassword)
+        userMenu.Items.Add(New ToolStripSeparator())
+        userMenu.Items.Add(miBackup)
+        AddHandler btnUserMenu.Click, Sub(sender, e) userMenu.Show(btnUserMenu, 0, btnUserMenu.Height)
+
+        ' Right-aligned header group so the actions stay pinned to the right edge
+        ' no matter how wide the (maximized) window is.
+        Dim pnlHeaderRight As New FlowLayoutPanel With {
+            .Dock = DockStyle.Right,
+            .Width = 660,
+            .FlowDirection = FlowDirection.RightToLeft,
+            .WrapContents = False,
+            .BackColor = Color.Transparent,
+            .Padding = New Padding(0, 46, 20, 0)
+        }
+        pnlHeaderRight.Controls.Add(btnHeaderExit)
+        pnlHeaderRight.Controls.Add(btnLanguage)
+        pnlHeaderRight.Controls.Add(btnUserMenu)
+        pnlHeader.Controls.Add(pnlHeaderRight)
         Me.Controls.Add(pnlHeader)
 
         pnlQuickActions = New Panel With {
             .Location = New Point(30, 170),
             .Size = New Size(1100, 790),
+            .TabIndex = 1,
             .BackColor = Color.Transparent
         }
 
@@ -180,6 +229,7 @@ Public Class Dashboard
             .Padding = New Padding(0, 8, 0, 0)
         }
         pnlQuickActions.Controls.Add(pnlAdminActions)
+        AddHandler Me.Resize, Sub() CenterDashboardContent()
 
         AddDashboardAction("Record Payment", 0, 0, SecurityContext.HasPermission("PAYMENT_MANAGE"), Sub()
             OpenDialog(Function() New PaymentForm())
@@ -219,6 +269,11 @@ Public Class Dashboard
 
     End Sub
 
+    Private Sub CenterDashboardContent()
+        If pnlQuickActions Is Nothing Then Return
+        pnlQuickActions.Left = Math.Max(24, (Me.ClientSize.Width - pnlQuickActions.Width) \ 2)
+    End Sub
+
     Private Sub AddDashboardAction(text As String, x As Integer, y As Integer, visible As Boolean, action As Action)
         Dim button As Button = ModernTheme.MakeSecondaryButton(text)
         button.Width = 180
@@ -232,16 +287,19 @@ Public Class Dashboard
         button.FlatAppearance.MouseOverBackColor = Color.FromArgb(70, 87, 98)
         button.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 54, 62)
         button.Visible = visible
-        AddHandler button.Click, Sub(sender, e)
-                                    Try
-                                        action()
-                                    Catch ex As UnauthorizedAccessException
-                                        MessageBox.Show(ex.Message, "Access denied", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                                    Catch ex As Exception
-                                        MessageBox.Show("Unable to open this feature: " & ex.Message, "MIOS", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                                    End Try
-                                End Sub
+        AddHandler button.Click, Sub(sender, e) RunFeature(action)
         pnlAdminActions.Controls.Add(button)
+    End Sub
+
+    Private Sub RunFeature(action As Action)
+        Try
+            action()
+        Catch ex As UnauthorizedAccessException
+            MessageBox.Show(ex.Message, "Access denied", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        Catch ex As Exception
+            AppLogger.Error("Unable to open dashboard feature", ex)
+            MessageBox.Show("Unable to open this feature: " & ex.Message, "MIOS", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub OpenDialog(factory As Func(Of Form))
@@ -268,6 +326,7 @@ Public Class Dashboard
                 stats.SalesToday = Convert.ToDecimal(ExecuteScalar(conn, "SELECT ISNULL(SUM(TotalAmount), 0) FROM mn.SalesInvoice WHERE CAST(InvoiceDate AS DATE) = CAST(GETDATE() AS DATE)"))
             End Using
         Catch ex As Exception
+            AppLogger.Error("Failed to load dashboard statistics", ex)
             MessageBox.Show("Unable to load dashboard statistics: " & ex.Message, "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
         Return stats
@@ -296,37 +355,53 @@ Public Class Dashboard
         Dim card As New Panel With {
             .BackColor = Color.White,
             .Padding = New Padding(16),
-            .Height = 110,
             .Margin = New Padding(8),
             .Dock = DockStyle.Fill
         }
+
+        ' A 3-row layout (two auto rows + a filler row) keeps the footer text
+        ' inside the card at any DPI instead of relying on tight fixed offsets.
+        Dim layout As New TableLayoutPanel With {
+            .Dock = DockStyle.Fill,
+            .BackColor = Color.Transparent,
+            .ColumnCount = 1,
+            .RowCount = 3,
+            .Margin = New Padding(0)
+        }
+        layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0!))
+        layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        layout.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0!))
 
         Dim lblTitle As New Label With {
             .Text = title,
             .ForeColor = ModernTheme.MutedText,
             .Font = New Font("Segoe UI", 10.0F),
-            .Location = New Point(18, 18),
-            .AutoSize = True
+            .AutoSize = True,
+            .Margin = New Padding(0)
         }
-        card.Controls.Add(lblTitle)
 
         Dim lblValue As New Label With {
             .Text = value,
             .ForeColor = ModernTheme.PrimaryText,
             .Font = New Font("Segoe UI", 20, FontStyle.Bold),
-            .Location = New Point(18, 46),
-            .AutoSize = True
+            .AutoSize = True,
+            .Margin = New Padding(0, 2, 0, 0)
         }
-        card.Controls.Add(lblValue)
 
         Dim lblNote As New Label With {
             .Text = note,
             .ForeColor = ModernTheme.Success,
             .Font = New Font("Segoe UI", 9.0F),
-            .Location = New Point(18, 88),
-            .AutoSize = True
+            .Dock = DockStyle.Fill,
+            .TextAlign = ContentAlignment.BottomLeft,
+            .Margin = New Padding(0)
         }
-        card.Controls.Add(lblNote)
+
+        layout.Controls.Add(lblTitle, 0, 0)
+        layout.Controls.Add(lblValue, 0, 1)
+        layout.Controls.Add(lblNote, 0, 2)
+        card.Controls.Add(layout)
         Return card
     End Function
 

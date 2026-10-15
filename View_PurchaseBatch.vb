@@ -186,36 +186,37 @@ Public Class View_PurchaseBatch
     Private Function GetPurchaseBatchesFromDB(Optional ByVal partFilter As String = "") As PurchaseBatch()
         Dim list As New List(Of PurchaseBatch)
         Try
-            DBModule.OpenConnection()
-            ' Fixed multi-line string for older VB.NET compilers
-            Dim query As String = "SELECT pb.BatchID, pb.PartNumber, ISNULL(s.SupplierName, 'N/A') AS SupplierName, " &
-                                 "pb.QuantityPurchased, pb.QuantityRemaining, pb.UnitCost, pb.PurchaseDate " &
-                                 "FROM mn.PurchaseBatch pb " &
-                                 "LEFT JOIN mn.Supplier s ON pb.SupplierID = s.SupplierID"
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Dim query As String = "SELECT pb.BatchID, pb.PartNumber, ISNULL(s.SupplierName, 'N/A') AS SupplierName, " &
+                                     "pb.QuantityPurchased, pb.QuantityRemaining, pb.UnitCost, pb.PurchaseDate " &
+                                     "FROM mn.PurchaseBatch pb " &
+                                     "LEFT JOIN mn.Supplier s ON pb.SupplierID = s.SupplierID"
 
-            If Not String.IsNullOrEmpty(partFilter) Then
-                query &= " WHERE pb.PartNumber LIKE @p"
-            End If
-            query &= " ORDER BY pb.PurchaseDate DESC"
+                If Not String.IsNullOrEmpty(partFilter) Then
+                    query &= " WHERE pb.PartNumber LIKE @p"
+                End If
+                query &= " ORDER BY pb.PurchaseDate DESC"
 
-            Using cmd As New SqlCommand(query, DBModule.Conn)
-                If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", "%" & partFilter & "%")
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        list.Add(New PurchaseBatch With {
-                            .BatchID = CInt(reader("BatchID")),
-                            .PartNumber = reader("PartNumber").ToString(),
-                            .SupplierName = reader("SupplierName").ToString(),
-                            .QuantityPurchased = CInt(reader("QuantityPurchased")),
-                            .QuantityRemaining = CInt(reader("QuantityRemaining")),
-                            .UnitCost = CDec(reader("UnitCost")),
-                            .DatePurchased = CDate(reader("PurchaseDate"))
-                        })
-                    End While
+                Using cmd As New SqlCommand(query, conn)
+                    If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", "%" & partFilter & "%")
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            list.Add(New PurchaseBatch With {
+                                .BatchID = CInt(reader("BatchID")),
+                                .PartNumber = reader("PartNumber").ToString(),
+                                .SupplierName = reader("SupplierName").ToString(),
+                                .QuantityPurchased = CInt(reader("QuantityPurchased")),
+                                .QuantityRemaining = CInt(reader("QuantityRemaining")),
+                                .UnitCost = CDec(reader("UnitCost")),
+                                .DatePurchased = CDate(reader("PurchaseDate"))
+                            })
+                        End While
+                    End Using
                 End Using
             End Using
-            DBModule.CloseConnection()
         Catch ex As Exception
+            AppLogger.Error("Failed to load purchase batches", ex)
             MessageBox.Show("DB Error: " & ex.Message)
         End Try
         Return list.ToArray()

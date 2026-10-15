@@ -2,10 +2,9 @@
 Imports System.Windows.Forms
 
 Module UserSetup
-    Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
 
     Public Function HasUsers() As Boolean
-        Using con As New SqlConnection(connectionString)
+        Using con As New SqlConnection(DBModule.ConnString)
             con.Open()
             Using cmd As New SqlCommand("SELECT COUNT(*) FROM mn.UUser", con)
                 Return Convert.ToInt32(cmd.ExecuteScalar()) > 0
@@ -14,7 +13,7 @@ Module UserSetup
     End Function
 
     Public Sub CreateUser(username As String, password As String)
-        Using con As New SqlConnection(connectionString)
+        Using con As New SqlConnection(DBModule.ConnString)
             con.Open()
             Using transaction = con.BeginTransaction()
                 Dim userID As Integer
@@ -31,11 +30,6 @@ Module UserSetup
                 transaction.Commit()
             End Using
         End Using
-    End Sub
-
-    Sub CreateInitialUser()
-        CreateUser("nati", "admin123")
-        MessageBox.Show("Initial user created: nati")
     End Sub
 
 End Module

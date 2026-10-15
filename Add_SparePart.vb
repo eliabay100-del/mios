@@ -18,6 +18,9 @@ Public Class Add_SparePart
     Private currentSupplierName As String = ""
     Private isNewSupplier As Boolean = False
     Private savedPhoneNumber As String = ""
+    Private savedSupplierName As String = ""
+    Private txtSearchName As TextBox
+    Private txtNewSupplierPhone As TextBox
 
     Private Sub Add_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If Not SecurityContext.HasPermission("INVENTORY_RECEIVE") Then
@@ -68,80 +71,198 @@ Public Class Add_SparePart
 
         Dim panel As New Panel With {
             .Location = New Point(30, 80),
-            .Size = New Size(640, 260),
+            .Size = New Size(640, 200),
             .BackColor = Color.White,
             .Padding = New Padding(20)
         }
         Me.Controls.Add(panel)
 
+        Dim lblHint As New Label With {
+            .Text = "Find an existing supplier by name and/or phone, or click New supplier.",
+            .Location = New Point(20, 16),
+            .Size = New Size(590, 24),
+            .ForeColor = ModernTheme.MutedText
+        }
+        panel.Controls.Add(lblHint)
+
+        Dim lblName As New Label With {
+            .Text = "Supplier name",
+            .Location = New Point(20, 54),
+            .Size = New Size(160, 30),
+            .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
+        panel.Controls.Add(lblName)
+
+        txtSearchName = ModernTheme.MakeTextBox()
+        txtSearchName.Location = New Point(190, 50)
+        txtSearchName.Width = 220
+        panel.Controls.Add(txtSearchName)
+
         Dim lblPhone As New Label With {
-            .Text = "Supplier phone number",
-            .Location = New Point(20, 24),
-            .Size = New Size(200, 30),
+            .Text = "Phone number",
+            .Location = New Point(20, 102),
+            .Size = New Size(160, 30),
             .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
             .ForeColor = ModernTheme.MutedText
         }
         panel.Controls.Add(lblPhone)
 
         txtPhoneNumber = ModernTheme.MakeTextBox()
-        txtPhoneNumber.Location = New Point(220, 20)
-        txtPhoneNumber.Width = 180
+        txtPhoneNumber.Location = New Point(190, 98)
+        txtPhoneNumber.Width = 220
         panel.Controls.Add(txtPhoneNumber)
 
         Dim btnCheck As Button = ModernTheme.MakePrimaryButton("Check supplier")
-        btnCheck.Location = New Point(420, 18)
-        btnCheck.Width = 160
+        btnCheck.Location = New Point(430, 50)
+        btnCheck.Width = 170
         AddHandler btnCheck.Click, AddressOf btnCheckSupplier_Click
         panel.Controls.Add(btnCheck)
 
-        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
-        btnCancel.Location = New Point(420, 72)
-        btnCancel.Width = 160
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("New supplier")
+        btnCancel.Location = New Point(430, 102)
+        btnCancel.Width = 170
         btnCancel.BackColor = ModernTheme.SurfaceAlt
-        btnCancel.ForeColor = ModernTheme.Danger
-        AddHandler btnCancel.Click, AddressOf btnCancel_Click
+        AddHandler btnCancel.Click, AddressOf btnNewSupplier_Click
         panel.Controls.Add(btnCancel)
+        ModernTheme.RefreshContent(Me)
     End Sub
 
     Private Sub btnCheckSupplier_Click(sender As Object, e As EventArgs)
+        Dim supplierName As String = txtSearchName.Text.Trim()
         Dim phoneNumber As String = txtPhoneNumber.Text.Trim()
 
-        If String.IsNullOrEmpty(phoneNumber) Then
-            MessageBox.Show("Please enter supplier phone number", "Input Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        If String.IsNullOrEmpty(supplierName) AndAlso String.IsNullOrEmpty(phoneNumber) Then
+            MessageBox.Show("Enter a supplier name and/or phone number to check.", "Input Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            txtSearchName.Focus()
             Return
         End If
 
+        savedSupplierName = supplierName
         savedPhoneNumber = phoneNumber
 
         Try
+            Dim matches As New List(Of SupplierMatch)
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-                Dim sql As String = "SELECT SupplierID, SupplierName FROM mn.Supplier WHERE Phone = @phone"
+                Dim clauses As New List(Of String)
+                If phoneNumber.Length > 0 Then clauses.Add("Phone = @phone")
+                If supplierName.Length > 0 Then clauses.Add("SupplierName LIKE @name")
+                Dim sql As String = "SELECT SupplierID, SupplierName, Phone FROM mn.Supplier WHERE " &
+                                    String.Join(" OR ", clauses) & " ORDER BY SupplierName"
                 Using cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@phone", phoneNumber)
+                    If phoneNumber.Length > 0 Then cmd.Parameters.AddWithValue("@phone", phoneNumber)
+                    If supplierName.Length > 0 Then cmd.Parameters.AddWithValue("@name", "%" & supplierName & "%")
                     Using reader As SqlDataReader = cmd.ExecuteReader()
-                        If reader.Read() Then
-                            currentSupplierID = reader.GetInt32(0)
-                            currentSupplierName = reader.GetString(1)
-                            isNewSupplier = False
-                        Else
-                            isNewSupplier = True
-                        End If
+                        While reader.Read()
+                            matches.Add(New SupplierMatch With {
+                                .ID = reader.GetInt32(0),
+                                .Name = reader.GetString(1),
+                                .Phone = If(reader.IsDBNull(2), "", reader.GetString(2))
+                            })
+                        End While
                     End Using
                 End Using
                 conn.Close()
             End Using
 
-            If Not isNewSupplier Then
+            If matches.Count = 0 Then
+                isNewSupplier = True
+                ShowNewSupplierSection()
+            ElseIf matches.Count = 1 Then
+                currentSupplierID = matches(0).ID
+                currentSupplierName = matches(0).Name
+                isNewSupplier = False
                 ShowPartEntrySection()
             Else
-                ShowNewSupplierSection()
+                ShowSupplierPickerSection(matches)
             End If
 
         Catch ex As Exception
+            AppLogger.Error("Failed to check supplier", ex)
             MessageBox.Show("Error checking supplier: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
+    Private Sub btnNewSupplier_Click(sender As Object, e As EventArgs)
+        savedSupplierName = txtSearchName.Text.Trim()
+        savedPhoneNumber = txtPhoneNumber.Text.Trim()
+        isNewSupplier = True
+        ShowNewSupplierSection()
+    End Sub
+
+    Private Sub ShowSupplierPickerSection(matches As List(Of SupplierMatch))
+        ClearFormExceptTitle()
+
+        Dim panel As New Panel With {
+            .Location = New Point(30, 80),
+            .Size = New Size(640, 320),
+            .BackColor = Color.White,
+            .Padding = New Padding(20)
+        }
+        Me.Controls.Add(panel)
+
+        Dim lblSectionTitle As New Label With {
+            .Text = "Several suppliers match - choose one",
+            .Font = New Font("Segoe UI", 16, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(20, 16),
+            .AutoSize = True
+        }
+        panel.Controls.Add(lblSectionTitle)
+
+        Dim list As New ListBox With {
+            .Location = New Point(20, 60),
+            .Size = New Size(580, 150),
+            .Font = New Font("Segoe UI", 10.0F),
+            .IntegralHeight = False
+        }
+        For Each match As SupplierMatch In matches
+            list.Items.Add(match)
+        Next
+        If list.Items.Count > 0 Then list.SelectedIndex = 0
+        panel.Controls.Add(list)
+
+        Dim btnUse As Button = ModernTheme.MakePrimaryButton("Use selected supplier")
+        btnUse.Location = New Point(20, 230)
+        btnUse.Width = 220
+        AddHandler btnUse.Click, Sub(s, ev)
+                                     Dim chosen As SupplierMatch = TryCast(list.SelectedItem, SupplierMatch)
+                                     If chosen Is Nothing Then Return
+                                     currentSupplierID = chosen.ID
+                                     currentSupplierName = chosen.Name
+                                     isNewSupplier = False
+                                     ShowPartEntrySection()
+                                 End Sub
+        panel.Controls.Add(btnUse)
+
+        Dim btnNew As Button = ModernTheme.MakeSecondaryButton("Create new supplier")
+        btnNew.Location = New Point(260, 230)
+        btnNew.Width = 190
+        btnNew.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnNew.Click, Sub(s, ev)
+                                     isNewSupplier = True
+                                     ShowNewSupplierSection()
+                                 End Sub
+        panel.Controls.Add(btnNew)
+
+        Dim btnBack As Button = ModernTheme.MakeSecondaryButton("Back")
+        btnBack.Location = New Point(470, 230)
+        btnBack.Width = 130
+        btnBack.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnBack.Click, AddressOf btnBackToSupplierCheck_Click
+        panel.Controls.Add(btnBack)
+        ModernTheme.RefreshContent(Me)
+    End Sub
+
+    Private Class SupplierMatch
+        Public Property ID As Integer
+        Public Property Name As String
+        Public Property Phone As String
+        Public Overrides Function ToString() As String
+            Return If(String.IsNullOrEmpty(Phone), Name, Name & "  (" & Phone & ")")
+        End Function
+    End Class
 
     Private Sub ShowNewSupplierSection()
         ClearFormExceptTitle()
@@ -164,7 +285,7 @@ Public Class Add_SparePart
         panel.Controls.Add(lblSectionTitle)
 
         Dim lblPhoneLabel As New Label With {
-            .Text = "Phone number",
+            .Text = "Phone (optional)",
             .Location = New Point(20, 70),
             .Size = New Size(130, 24),
             .Font = New Font("Segoe UI", 10, FontStyle.Bold),
@@ -172,12 +293,11 @@ Public Class Add_SparePart
         }
         panel.Controls.Add(lblPhoneLabel)
 
-        Dim txtPhoneReadOnly As TextBox = ModernTheme.MakeTextBox()
-        txtPhoneReadOnly.Location = New Point(170, 66)
-        txtPhoneReadOnly.Width = 260
-        txtPhoneReadOnly.ReadOnly = True
-        txtPhoneReadOnly.Text = savedPhoneNumber
-        panel.Controls.Add(txtPhoneReadOnly)
+        txtNewSupplierPhone = ModernTheme.MakeTextBox()
+        txtNewSupplierPhone.Location = New Point(170, 66)
+        txtNewSupplierPhone.Width = 260
+        txtNewSupplierPhone.Text = savedPhoneNumber
+        panel.Controls.Add(txtNewSupplierPhone)
 
         Dim lblSupName As New Label With {
             .Text = "Supplier name *",
@@ -191,6 +311,7 @@ Public Class Add_SparePart
         txtSupplierName = ModernTheme.MakeTextBox()
         txtSupplierName.Location = New Point(170, 116)
         txtSupplierName.Width = 260
+        txtSupplierName.Text = savedSupplierName
         panel.Controls.Add(txtSupplierName)
 
         Dim lblAddress As New Label With {
@@ -221,30 +342,36 @@ Public Class Add_SparePart
         btnBack.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnBack.Click, AddressOf btnBackToSupplierCheck_Click
         panel.Controls.Add(btnBack)
+        ModernTheme.RefreshContent(Me)
     End Sub
 
     Private Sub btnContinueToParts_Click(sender As Object, e As EventArgs)
-        If String.IsNullOrEmpty(txtSupplierName.Text.Trim()) Then
+        Dim supplierName As String = txtSupplierName.Text.Trim()
+        If String.IsNullOrEmpty(supplierName) Then
             MessageBox.Show("Supplier name is required", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             txtSupplierName.Focus()
             Return
         End If
+
+        Dim phoneNumber As String = txtNewSupplierPhone.Text.Trim()
+        savedPhoneNumber = phoneNumber
 
         Try
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
                 Dim sql As String = "INSERT INTO mn.Supplier (SupplierName, Phone, Address, CreatedAt) OUTPUT INSERTED.SupplierID VALUES (@name, @phone, @address, GETDATE())"
                 Using cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@name", txtSupplierName.Text.Trim())
-                    cmd.Parameters.AddWithValue("@phone", savedPhoneNumber)
-                    cmd.Parameters.AddWithValue("@address", If(String.IsNullOrEmpty(txtAddress.Text), DBNull.Value, txtAddress.Text.Trim()))
+                    cmd.Parameters.AddWithValue("@name", supplierName)
+                    cmd.Parameters.AddWithValue("@phone", If(phoneNumber.Length = 0, DBNull.Value, CObj(phoneNumber)))
+                    cmd.Parameters.AddWithValue("@address", If(String.IsNullOrEmpty(txtAddress.Text), DBNull.Value, CObj(txtAddress.Text.Trim())))
                     currentSupplierID = CInt(cmd.ExecuteScalar())
-                    currentSupplierName = txtSupplierName.Text.Trim()
+                    currentSupplierName = supplierName
                 End Using
                 conn.Close()
             End Using
             ShowPartEntrySection()
         Catch ex As Exception
+            AppLogger.Error("Failed to create supplier", ex)
             MessageBox.Show("Error creating supplier: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
@@ -388,6 +515,7 @@ Public Class Add_SparePart
         btnCancel.ForeColor = ModernTheme.Danger
         AddHandler btnCancel.Click, AddressOf btnCancel_Click
         panel.Controls.Add(btnCancel)
+        ModernTheme.RefreshContent(Me)
     End Sub
 
     Private Sub LoadCategories()
@@ -584,11 +712,12 @@ Public Class Add_SparePart
                     ShowSuccess(partNumber, quantity, unitPrice)
                 Catch ex As Exception
                     transaction.Rollback()
-                    Throw ex
+                    Throw
                 End Try
                 conn.Close()
             End Using
         Catch ex As Exception
+            AppLogger.Error("Failed to save spare part", ex)
             MessageBox.Show("Error saving part: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
@@ -664,6 +793,7 @@ Public Class Add_SparePart
         btnDone.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnDone.Click, AddressOf btnDone_Click
         panel.Controls.Add(btnDone)
+        ModernTheme.RefreshContent(Me)
     End Sub
 
     Private Sub btnAddAnother_Click(sender As Object, e As EventArgs)

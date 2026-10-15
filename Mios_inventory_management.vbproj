@@ -42,7 +42,7 @@
     <OptionCompare>Binary</OptionCompare>
   </PropertyGroup>
   <PropertyGroup>
-    <OptionStrict>Off</OptionStrict>
+    <OptionStrict>On</OptionStrict>
   </PropertyGroup>
   <PropertyGroup>
     <OptionInfer>On</OptionInfer>
@@ -52,6 +52,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
@@ -83,6 +84,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="AccountingService.vb" />
+    <Compile Include="AppLogger.vb" />
     <Compile Include="BackupForm.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -98,12 +100,6 @@
     <Compile Include="CategoryManagementForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="changePW.Designer.vb">
-      <DependentUpon>changePW.vb</DependentUpon>
-    </Compile>
-    <Compile Include="changePW.vb">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Customer.Designer.vb">
       <DependentUpon>Customer.vb</DependentUpon>
     </Compile>
@@ -111,6 +107,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="DBModule.vb" />
+    <Compile Include="InventoryService.vb" />
     <Compile Include="Form1.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -131,12 +128,6 @@
       <DependentUpon>Issue_SparePart.vb</DependentUpon>
     </Compile>
     <Compile Include="Issue_SparePart.vb">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Login.Designer.vb">
-      <DependentUpon>Login.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Login.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="LoginNew.Designer.vb">
@@ -170,12 +161,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-    <Compile Include="SetupForm.Designer.vb">
-      <DependentUpon>SetupForm.vb</DependentUpon>
-    </Compile>
-    <Compile Include="SetupForm.vb">
-      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Supplier.Designer.vb">
       <DependentUpon>Supplier.vb</DependentUpon>
@@ -219,9 +204,6 @@
     <EmbeddedResource Include="ChangePasswordForm.resx">
       <DependentUpon>ChangePasswordForm.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="changePW.resx">
-      <DependentUpon>changePW.vb</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Customer.resx">
       <DependentUpon>Customer.vb</DependentUpon>
     </EmbeddedResource>
@@ -231,9 +213,6 @@
     <EmbeddedResource Include="Issue_SparePart.resx">
       <DependentUpon>Issue_SparePart.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Login.resx">
-      <DependentUpon>Login.vb</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="LoginNew.resx">
       <DependentUpon>LoginNew.vb</DependentUpon>
     </EmbeddedResource>
@@ -242,9 +221,6 @@
       <LastGenOutput>Resources.Designer.vb</LastGenOutput>
       <CustomToolNamespace>My.Resources</CustomToolNamespace>
       <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="SetupForm.resx">
-      <DependentUpon>SetupForm.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Supplier.resx">
       <DependentUpon>Supplier.vb</DependentUpon>
@@ -273,6 +249,14 @@
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\logo.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>

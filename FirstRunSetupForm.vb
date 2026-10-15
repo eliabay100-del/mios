@@ -16,6 +16,7 @@ Public Class FirstRunSetupForm
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
+        ModernTheme.ApplyWindowTheme(Me)
 
         Dim title As New Label With {
             .Text = "Create your first user",
@@ -34,12 +35,10 @@ Public Class FirstRunSetupForm
         lblError.Size = New Size(390, 24)
         Me.Controls.Add(lblError)
 
-        Dim btnCreate As New Button With {
-            .Text = "Create user",
-            .Location = New Point(270, 255),
-            .Size = New Size(140, 35),
-            .DialogResult = DialogResult.None
-        }
+        Dim btnCreate As Button = ModernTheme.MakePrimaryButton("Create user")
+        btnCreate.Location = New Point(270, 255)
+        btnCreate.Size = New Size(140, 35)
+        btnCreate.DialogResult = DialogResult.None
         AddHandler btnCreate.Click, AddressOf CreateUser_Click
         Me.Controls.Add(btnCreate)
         Me.AcceptButton = btnCreate
@@ -77,6 +76,7 @@ Public Class FirstRunSetupForm
             Me.DialogResult = DialogResult.OK
             Me.Close()
         Catch ex As Exception
+            AppLogger.Error("Failed to create first user", ex)
             lblError.Text = "Unable to create user: " & ex.Message
         End Try
     End Sub

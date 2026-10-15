@@ -1,5 +1,6 @@
 Imports System.Data.SqlClient
 Imports System.Drawing
+Imports System.IO
 Imports System.Windows.Forms
 
 Public Class BackupForm
@@ -28,19 +29,41 @@ Public Class BackupForm
             dialog.Filter = "SQL Server backup (*.bak)|*.bak"
             dialog.FileName = "MIOS_Inventory_" & DateTime.Now.ToString("yyyyMMdd_HHmmss") & ".bak"
             If dialog.ShowDialog() <> DialogResult.OK Then Return
+
+            Dim fullPath = dialog.FileName
+            If Not ValidateBackupPath(fullPath) Then
+                MessageBox.Show("Invalid backup path. Choose a different location.", "Backup", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
             Try
                 Using conn As New SqlConnection(DBModule.ConnString)
                     conn.Open()
-                    Dim path = dialog.FileName.Replace("'", "''")
-                    Using cmd As New SqlCommand("BACKUP DATABASE [Inventory] TO DISK = N'" & path & "' WITH INIT, FORMAT", conn)
+                    Dim safePath = fullPath.Replace("'", "''")
+                    Using cmd As New SqlCommand("BACKUP DATABASE [Inventory] TO DISK = N'" & safePath & "' WITH INIT, FORMAT", conn)
                         cmd.CommandTimeout = 0
                         cmd.ExecuteNonQuery()
                     End Using
                 End Using
+                AppLogger.Info("Database backup completed to " & fullPath)
                 MessageBox.Show("Backup completed.", "Backup", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Catch ex As Exception
+                AppLogger.Error("Database backup failed", ex)
                 MessageBox.Show("Backup failed: " & ex.Message, "Backup", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End Using
     End Sub
+
+    Private Function ValidateBackupPath(path As String) As Boolean
+        If String.IsNullOrWhiteSpace(path) Then Return False
+        If Not path.EndsWith(".bak", StringComparison.OrdinalIgnoreCase) Then Return False
+        Dim invalidChars = IO.Path.GetInvalidPathChars()
+        If path.IndexOfAny(invalidChars) >= 0 Then Return False
+        Dim dir = IO.Path.GetDirectoryName(path)
+        If String.IsNullOrEmpty(dir) Then Return False
+        If Not IO.Directory.Exists(dir) Then Return False
+        Dim fileName = IO.Path.GetFileName(path)
+        If String.IsNullOrEmpty(fileName) OrElse fileName.IndexOfAny(IO.Path.GetInvalidFileNameChars()) >= 0 Then Return False
+        Return True
+    End Function
 End Class

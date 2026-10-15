@@ -141,7 +141,7 @@ Public Class PaymentForm
                         cmd.Parameters.AddWithValue("@referenceID", documentID)
                         cmd.Parameters.AddWithValue("@amount", amount)
                         cmd.Parameters.AddWithValue("@method", cmbMethod.Text)
-                        cmd.Parameters.AddWithValue("@notes", If(String.IsNullOrWhiteSpace(txtNotes.Text), DBNull.Value, txtNotes.Text.Trim()))
+                        cmd.Parameters.AddWithValue("@notes", If(String.IsNullOrWhiteSpace(txtNotes.Text), DBNull.Value, CObj(txtNotes.Text.Trim())))
                         cmd.ExecuteNonQuery()
                     End Using
 
@@ -177,6 +177,7 @@ Public Class PaymentForm
             MessageBox.Show("Payment recorded successfully.", "Payment", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Me.Close()
         Catch ex As Exception
+            AppLogger.Error("Failed to record payment", ex)
             lblError.Text = ex.Message
         End Try
     End Sub

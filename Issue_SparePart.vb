@@ -18,6 +18,9 @@ Public Class Issue_SparePart
     Private customerName As String = ""
     Private customerExists As Boolean = False
     Private savedPhone As String = ""
+    Private savedSearchName As String = ""
+    Private txtSearchName As TextBox
+    Private txtNewCustomerPhone As TextBox
 
     Private Sub Issue_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ModernTheme.ApplyWindowTheme(Me)
@@ -29,8 +32,10 @@ Public Class Issue_SparePart
         ' Form setup
         Me.Text = "Issue Spare Parts"
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.Size = New Size(600, 600)
-        Me.BackColor = Color.FromArgb(248, 249, 250)
+        Me.Size = New Size(780, 760)
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
 
         ' Create title
         CreateTitle()
@@ -42,15 +47,121 @@ Public Class Issue_SparePart
     ' =============== FORM TITLE ===============
     Private Sub CreateTitle()
         Dim lblTitle As New Label With {
-            .Text = "ISSUE SPARE PARTS",
-            .Font = New Font("Arial", 14, FontStyle.Bold),
-            .ForeColor = Color.Navy,
-            .Location = New Point(180, 20),
-            .Size = New Size(250, 30),
+            .Text = "Issue Spare Parts",
+            .Font = New Font("Segoe UI", 22, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText,
+            .Location = New Point(30, 24),
+            .Size = New Size(400, 38),
             .Name = "lblTitle"
         }
         Me.Controls.Add(lblTitle)
     End Sub
+
+    ' ---- Small layout helpers (keeps the sections consistent) -----------
+    Private Function MakeCard(x As Integer, y As Integer, w As Integer, h As Integer) As Panel
+        Return New Panel With {
+            .Location = New Point(x, y),
+            .Size = New Size(w, h),
+            .BackColor = ModernTheme.Surface
+        }
+    End Function
+
+    Private Function MakeFieldLabel(text As String, x As Integer, y As Integer, Optional w As Integer = 170) As Label
+        Return New Label With {
+            .Text = text,
+            .Location = New Point(x, y),
+            .Size = New Size(w, 30),
+            .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
+    End Function
+
+    Private Function MakeSectionTitle(text As String, x As Integer, y As Integer) As Label
+        Return New Label With {
+            .Text = text,
+            .Location = New Point(x, y),
+            .AutoSize = True,
+            .Font = New Font("Segoe UI", 15.0F, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText
+        }
+    End Function
+
+    Private Function MakeHint(text As String, x As Integer, y As Integer, w As Integer) As Label
+        Return New Label With {
+            .Text = text,
+            .Location = New Point(x, y),
+            .Size = New Size(w, 24),
+            .ForeColor = ModernTheme.MutedText
+        }
+    End Function
+
+    Private Function MakeColumnHeading(text As String, x As Integer, y As Integer, w As Integer) As Label
+        Return New Label With {
+            .Text = text,
+            .Location = New Point(x, y),
+            .Size = New Size(w, 20),
+            .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
+    End Function
+
+    ' The items card is shared by the new- and existing-customer screens.
+    Private Function BuildItemsCard(x As Integer, y As Integer) As Panel
+        Dim card As Panel = MakeCard(x, y, 680, 320)
+        card.Controls.Add(MakeSectionTitle("Items to issue", 20, 16))
+        card.Controls.Add(MakeColumnHeading("Part number", 30, 54, 200))
+        card.Controls.Add(MakeColumnHeading("Qty", 240, 54, 90))
+        card.Controls.Add(MakeColumnHeading("Unit price", 340, 54, 120))
+
+        Dim container As New Panel With {
+            .Location = New Point(20, 80),
+            .Size = New Size(640, 160),
+            .BackColor = ModernTheme.SurfaceAlt,
+            .Padding = New Padding(10),
+            .AutoScroll = True
+        }
+        card.Controls.Add(container)
+        AddItemRow(container)
+
+        Dim btnAddItem As Button = ModernTheme.MakeSecondaryButton("+ Add item")
+        btnAddItem.Location = New Point(20, 248)
+        btnAddItem.Width = 150
+        btnAddItem.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnAddItem.Click, Sub(s, ev) AddItemRow(container)
+        card.Controls.Add(btnAddItem)
+
+        Return card
+    End Function
+
+    ' The notes/actions card is shared by the new- and existing-customer screens.
+    Private Function BuildActionsCard(x As Integer, y As Integer, isNewCustomer As Boolean) As Panel
+        Dim card As Panel = MakeCard(x, y, 680, 230)
+        card.Controls.Add(MakeSectionTitle("Notes & actions", 20, 16))
+
+        card.Controls.Add(MakeFieldLabel("Remarks", 20, 56))
+
+        txtRemarks = ModernTheme.MakeTextBox()
+        txtRemarks.Location = New Point(20, 82)
+        txtRemarks.Width = 640
+        txtRemarks.Height = 60
+        txtRemarks.Multiline = True
+        card.Controls.Add(txtRemarks)
+
+        Dim btnIssue As Button = ModernTheme.MakePrimaryButton(If(isNewCustomer, "Save customer & issue", "Issue parts"))
+        btnIssue.Location = New Point(20, 158)
+        btnIssue.Width = 240
+        AddHandler btnIssue.Click, Sub(s, ev) ProcessIssue(isNewCustomer)
+        card.Controls.Add(btnIssue)
+
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(272, 158)
+        btnCancel.Width = 140
+        btnCancel.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnCancel.Click, AddressOf btnCancel_Click
+        card.Controls.Add(btnCancel)
+
+        Return card
+    End Function
 
     ' =============== CLEAR FORM ===============
     Private Sub ClearFormExceptTitle()
@@ -69,426 +180,322 @@ Public Class Issue_SparePart
         ' Clear item panels
         itemPanels.Clear()
         itemCount = 0
+
+        ' Each section is rebuilt from the top.
+        Me.AutoScrollPosition = New Point(0, 0)
     End Sub
 
-    ' =============== STEP 1: PHONE CHECK ===============
+    ' =============== STEP 1: CUSTOMER CHECK ===============
     Private Sub ShowPhoneCheckSection()
         ClearFormExceptTitle()
 
-        ' Label
-        Dim lblPhone As New Label With {
-            .Text = "Customer Phone Number:",
-            .Location = New Point(50, 80),
-            .Size = New Size(180, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(lblPhone)
+        Dim card As Panel = MakeCard(30, 80, 680, 220)
+        card.Controls.Add(MakeHint("Find a customer by name and/or phone, or click New customer.", 20, 16, 640))
 
-        ' TextBox for phone
-        txtPhone = New TextBox With {
-            .Location = New Point(240, 80),
-            .Size = New Size(200, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtPhone)
+        card.Controls.Add(MakeFieldLabel("Customer name", 20, 54))
+        txtSearchName = ModernTheme.MakeTextBox()
+        txtSearchName.Location = New Point(190, 50)
+        txtSearchName.Width = 240
+        card.Controls.Add(txtSearchName)
 
-        ' Check Customer Button
-        Dim btnCheck As New Button With {
-            .Text = "Check Customer",
-            .Location = New Point(450, 78),
-            .Size = New Size(120, 30),
-            .BackColor = Color.FromArgb(59, 130, 246),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 9, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        card.Controls.Add(MakeFieldLabel("Phone number", 20, 102))
+        txtPhone = ModernTheme.MakeTextBox()
+        txtPhone.Location = New Point(190, 98)
+        txtPhone.Width = 240
+        card.Controls.Add(txtPhone)
+
+        Dim btnCheck As Button = ModernTheme.MakePrimaryButton("Check customer")
+        btnCheck.Location = New Point(450, 50)
+        btnCheck.Width = 200
         AddHandler btnCheck.Click, AddressOf btnCheckCustomer_Click
-        Me.Controls.Add(btnCheck)
+        card.Controls.Add(btnCheck)
 
-        ' Cancel Button
-        Dim btnCancel As New Button With {
-            .Text = "Cancel",
-            .Location = New Point(450, 120),
-            .Size = New Size(120, 30),
-            .BackColor = Color.FromArgb(239, 68, 68),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 9, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnNew As Button = ModernTheme.MakeSecondaryButton("New customer")
+        btnNew.Location = New Point(450, 98)
+        btnNew.Width = 200
+        btnNew.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnNew.Click, AddressOf btnNewCustomer_Click
+        card.Controls.Add(btnNew)
+
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(20, 152)
+        btnCancel.Width = 140
+        btnCancel.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnCancel.Click, AddressOf btnCancel_Click
-        Me.Controls.Add(btnCancel)
+        card.Controls.Add(btnCancel)
+
+        Me.Controls.Add(card)
+        ModernTheme.RefreshContent(Me)
+        FitToContent()
+    End Sub
+
+    ''' <summary>
+    ''' Resizes the dialog so the current section is framed snugly, without ever
+    ''' growing past the working area of the screen it is shown on (the taller
+    ''' sections then simply scroll).
+    ''' </summary>
+    Private Sub FitToContent()
+        Me.PerformLayout()
+
+        Dim contentBottom As Integer = 0
+        For Each ctrl As Control In Me.Controls
+            If ctrl.Visible Then contentBottom = Math.Max(contentBottom, ctrl.Bottom)
+        Next
+        If contentBottom <= 0 Then Return
+
+        Dim frame As Integer = Me.Height - Me.ClientSize.Height
+        Dim target As Integer = contentBottom + 24 + frame
+        Dim maxHeight As Integer = Screen.FromControl(Me).WorkingArea.Height - 24
+        If target > maxHeight Then target = maxHeight
+        If target < 240 Then target = 240
+
+        If target <> Me.Height Then Me.Height = target
     End Sub
 
     ' =============== CHECK CUSTOMER ===============
     Private Sub btnCheckCustomer_Click(sender As Object, e As EventArgs)
+        Dim customerNameInput As String = txtSearchName.Text.Trim()
         Dim phoneNumber As String = txtPhone.Text.Trim()
 
-        If String.IsNullOrEmpty(phoneNumber) Then
-            MessageBox.Show("Please enter customer phone number", "Input Required",
-                          MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        If String.IsNullOrEmpty(customerNameInput) AndAlso String.IsNullOrEmpty(phoneNumber) Then
+            MessageBox.Show("Enter a customer name and/or phone number to check, or click New Customer.",
+                          "Input Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            txtSearchName.Focus()
             Return
         End If
 
-        ' Save phone for later use
+        ' Save what was typed so a new-customer form can reuse it
+        savedSearchName = customerNameInput
         savedPhone = phoneNumber
 
         Try
-            ' Use a fresh connection
+            Dim matches As New List(Of CustomerMatch)
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
 
-                ' Check if customer exists (PHP: SELECT * FROM mn.Customers WHERE PhoneNumber = ?)
-                ' Note: Your database has [Phone] column, PHP uses PhoneNumber
-                Dim sql As String = "SELECT CustomerID, CustomerName, Phone FROM mn.Customer WHERE Phone = @phone"
+                Dim clauses As New List(Of String)
+                If phoneNumber.Length > 0 Then clauses.Add("Phone = @phone")
+                If customerNameInput.Length > 0 Then clauses.Add("CustomerName LIKE @name")
+                Dim sql As String = "SELECT CustomerID, CustomerName, Phone FROM mn.Customer WHERE " &
+                                    String.Join(" OR ", clauses) & " ORDER BY CustomerName"
                 Using cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@phone", phoneNumber)
-
+                    If phoneNumber.Length > 0 Then cmd.Parameters.AddWithValue("@phone", phoneNumber)
+                    If customerNameInput.Length > 0 Then cmd.Parameters.AddWithValue("@name", "%" & customerNameInput & "%")
                     Using reader As SqlDataReader = cmd.ExecuteReader()
-                        If reader.Read() Then
-                            ' Customer exists
-                            customerID = reader.GetInt32(0)
-                            customerName = reader.GetString(1)
-                            customerExists = True
-
-                            ' Show existing customer issue form
-                            ShowExistingCustomerSection()
-                        Else
-                            ' New customer
-                            customerExists = False
-
-                            ' Show new customer form
-                            ShowNewCustomerSection()
-                        End If
+                        While reader.Read()
+                            matches.Add(New CustomerMatch With {
+                                .ID = reader.GetInt32(0),
+                                .Name = reader.GetString(1),
+                                .Phone = If(reader.IsDBNull(2), "", reader.GetString(2))
+                            })
+                        End While
                     End Using
                 End Using
 
                 conn.Close()
             End Using
 
+            If matches.Count = 0 Then
+                customerExists = False
+                ShowNewCustomerSection()
+            ElseIf matches.Count = 1 Then
+                customerID = matches(0).ID
+                customerName = matches(0).Name
+                customerExists = True
+                ShowExistingCustomerSection()
+            Else
+                ShowCustomerPickerSection(matches)
+            End If
+
         Catch ex As Exception
+            AppLogger.Error("Failed to check customer", ex)
             MessageBox.Show("Error checking customer: " & ex.Message, "Database Error",
                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
+    ' =============== NEW CUSTOMER (from the check screen) ===============
+    Private Sub btnNewCustomer_Click(sender As Object, e As EventArgs)
+        savedSearchName = txtSearchName.Text.Trim()
+        savedPhone = txtPhone.Text.Trim()
+        customerExists = False
+        ShowNewCustomerSection()
+    End Sub
+
+    ' =============== PICK BETWEEN SEVERAL MATCHES ===============
+    Private Sub ShowCustomerPickerSection(matches As List(Of CustomerMatch))
+        ClearFormExceptTitle()
+
+        Dim card As Panel = MakeCard(30, 80, 680, 330)
+        card.Controls.Add(MakeSectionTitle("Several customers match - choose one", 20, 18))
+
+        Dim list As New ListBox With {
+            .Location = New Point(20, 62),
+            .Size = New Size(640, 170),
+            .Font = New Font("Segoe UI", 10.0F),
+            .BorderStyle = BorderStyle.FixedSingle,
+            .IntegralHeight = False
+        }
+        For Each match As CustomerMatch In matches
+            list.Items.Add(match)
+        Next
+        If list.Items.Count > 0 Then list.SelectedIndex = 0
+        card.Controls.Add(list)
+
+        Dim btnUse As Button = ModernTheme.MakePrimaryButton("Use selected customer")
+        btnUse.Location = New Point(20, 250)
+        btnUse.Width = 220
+        AddHandler btnUse.Click, Sub(s, ev)
+                                     Dim chosen As CustomerMatch = TryCast(list.SelectedItem, CustomerMatch)
+                                     If chosen Is Nothing Then Return
+                                     customerID = chosen.ID
+                                     customerName = chosen.Name
+                                     customerExists = True
+                                     ShowExistingCustomerSection()
+                                 End Sub
+        card.Controls.Add(btnUse)
+
+        Dim btnNew As Button = ModernTheme.MakeSecondaryButton("Create new customer")
+        btnNew.Location = New Point(252, 250)
+        btnNew.Width = 200
+        btnNew.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnNew.Click, AddressOf btnNewCustomer_Click
+        card.Controls.Add(btnNew)
+
+        Dim btnBack As Button = ModernTheme.MakeSecondaryButton("Back")
+        btnBack.Location = New Point(464, 250)
+        btnBack.Width = 196
+        btnBack.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnBack.Click, Sub(s, ev) ShowPhoneCheckSection()
+        card.Controls.Add(btnBack)
+
+        Me.Controls.Add(card)
+        ModernTheme.RefreshContent(Me)
+        FitToContent()
+    End Sub
+
+    Private Class CustomerMatch
+        Public Property ID As Integer
+        Public Property Name As String
+        Public Property Phone As String
+        Public Overrides Function ToString() As String
+            Return If(String.IsNullOrEmpty(Phone), Name, Name & "  (" & Phone & ")")
+        End Function
+    End Class
+
     ' =============== STEP 2A: NEW CUSTOMER ===============
     Private Sub ShowNewCustomerSection()
         ClearFormExceptTitle()
 
-        ' Section Title
-        Dim lblSectionTitle As New Label With {
-            .Text = "New Customer Information",
-            .Font = New Font("Arial", 11, FontStyle.Bold),
-            .Location = New Point(50, 60),
-            .Size = New Size(300, 25),
-            .ForeColor = Color.DarkBlue
-        }
-        Me.Controls.Add(lblSectionTitle)
+        Dim infoCard As Panel = MakeCard(30, 80, 680, 220)
+        infoCard.Controls.Add(MakeSectionTitle("New customer", 20, 16))
 
-        ' Phone Number (READ-ONLY from step 1)
-        Dim lblPhoneLabel As New Label With {
-            .Text = "Phone Number:",
-            .Location = New Point(50, 100),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(lblPhoneLabel)
+        infoCard.Controls.Add(MakeFieldLabel("First name *", 20, 56, 130))
+        txtFirstName = ModernTheme.MakeTextBox()
+        txtFirstName.Location = New Point(155, 52)
+        txtFirstName.Width = 180
+        infoCard.Controls.Add(txtFirstName)
 
-        Dim txtPhoneReadOnly As New TextBox With {
-            .Location = New Point(180, 100),
-            .Size = New Size(200, 25),
-            .Font = New Font("Arial", 10),
-            .Text = savedPhone,
-            .ReadOnly = True,
-            .BackColor = Color.FromArgb(240, 240, 240),
-            .ForeColor = Color.DarkGreen,
-            .BorderStyle = BorderStyle.FixedSingle
-        }
-        Me.Controls.Add(txtPhoneReadOnly)
+        infoCard.Controls.Add(MakeFieldLabel("Last name *", 360, 56, 130))
+        txtLastName = ModernTheme.MakeTextBox()
+        txtLastName.Location = New Point(495, 52)
+        txtLastName.Width = 165
+        infoCard.Controls.Add(txtLastName)
 
-        ' First Name (REQUIRED)
-        Dim lblFirstName As New Label With {
-            .Text = "First Name: *",
-            .Location = New Point(50, 140),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(lblFirstName)
+        infoCard.Controls.Add(MakeFieldLabel("Phone", 20, 98, 130))
+        txtNewCustomerPhone = ModernTheme.MakeTextBox()
+        txtNewCustomerPhone.Location = New Point(155, 94)
+        txtNewCustomerPhone.Width = 180
+        txtNewCustomerPhone.Text = savedPhone
+        infoCard.Controls.Add(txtNewCustomerPhone)
 
-        txtFirstName = New TextBox With {
-            .Location = New Point(180, 140),
-            .Size = New Size(200, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtFirstName)
+        infoCard.Controls.Add(MakeFieldLabel("Email", 360, 98, 130))
+        txtEmail = ModernTheme.MakeTextBox()
+        txtEmail.Location = New Point(495, 94)
+        txtEmail.Width = 165
+        infoCard.Controls.Add(txtEmail)
 
-        ' Last Name (REQUIRED - PHP logic: both required)
-        Dim lblLastName As New Label With {
-            .Text = "Last Name: *",
-            .Location = New Point(50, 180),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(lblLastName)
+        infoCard.Controls.Add(MakeFieldLabel("Address", 20, 140, 130))
+        txtAddress = ModernTheme.MakeTextBox()
+        txtAddress.Location = New Point(155, 136)
+        txtAddress.Width = 505
+        txtAddress.Height = 56
+        txtAddress.Multiline = True
+        infoCard.Controls.Add(txtAddress)
 
-        txtLastName = New TextBox With {
-            .Location = New Point(180, 180),
-            .Size = New Size(200, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtLastName)
-
-        ' Address (Optional)
-        Dim lblAddress As New Label With {
-            .Text = "Address:",
-            .Location = New Point(50, 220),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(lblAddress)
-
-        txtAddress = New TextBox With {
-            .Location = New Point(180, 220),
-            .Size = New Size(200, 60),
-            .Multiline = True,
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtAddress)
-
-        ' Email (Optional)
-        Dim lblEmail As New Label With {
-            .Text = "Email:",
-            .Location = New Point(50, 300),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(lblEmail)
-
-        txtEmail = New TextBox With {
-            .Location = New Point(180, 300),
-            .Size = New Size(200, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtEmail)
-
-        ' Items Section Title
-        Dim lblItemsTitle As New Label With {
-            .Text = "Items to Issue:",
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .Location = New Point(50, 340),
-            .Size = New Size(200, 25),
-            .ForeColor = Color.DarkSlateGray
-        }
-        Me.Controls.Add(lblItemsTitle)
-
-        ' Container for items (like PHP's items-container-new)
-        Dim pnlItemsContainer As New Panel With {
-            .Location = New Point(50, 370),
-            .Size = New Size(500, 120),
-            .BackColor = Color.White,
-            .BorderStyle = BorderStyle.FixedSingle,
-            .Padding = New Padding(10)
-        }
-        Me.Controls.Add(pnlItemsContainer)
-
-        ' Add initial item row
-        AddItemRow(pnlItemsContainer)
-
-        ' Add Item Button
-        Dim btnAddItem As New Button With {
-            .Text = "+ Add Item",
-            .Location = New Point(50, 500),
-            .Size = New Size(100, 30),
-            .BackColor = Color.FromArgb(229, 231, 235),
-            .Font = New Font("Arial", 9),
-            .FlatStyle = FlatStyle.Flat
-        }
-        AddHandler btnAddItem.Click, Sub(s, ev) AddItemRow(pnlItemsContainer)
-        Me.Controls.Add(btnAddItem)
-
-        ' Remarks
-        Dim lblRemarks As New Label With {
-            .Text = "Remarks:",
-            .Location = New Point(50, 540),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(lblRemarks)
-
-        txtRemarks = New TextBox With {
-            .Location = New Point(180, 540),
-            .Size = New Size(200, 60),
-            .Multiline = True,
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtRemarks)
-
-        ' Issue Button
-        Dim btnIssue As New Button With {
-            .Text = "Save Customer & Issue",
-            .Location = New Point(180, 620),
-            .Size = New Size(180, 35),
-            .BackColor = Color.FromArgb(34, 197, 94),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
-        AddHandler btnIssue.Click, Sub(s, ev) ProcessIssue(True) ' True = new customer
-        Me.Controls.Add(btnIssue)
-
-        ' Cancel Button
-        Dim btnCancel As New Button With {
-            .Text = "Cancel",
-            .Location = New Point(370, 620),
-            .Size = New Size(100, 35),
-            .BackColor = Color.FromArgb(239, 68, 68),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
-        AddHandler btnCancel.Click, AddressOf btnCancel_Click
-        Me.Controls.Add(btnCancel)
+        Me.Controls.Add(infoCard)
+        Me.Controls.Add(BuildItemsCard(30, 320))
+        Me.Controls.Add(BuildActionsCard(30, 660, True))
+        ModernTheme.RefreshContent(Me)
+        FitToContent()
     End Sub
 
     ' =============== STEP 2B: EXISTING CUSTOMER ===============
     Private Sub ShowExistingCustomerSection()
         ClearFormExceptTitle()
 
-        ' Customer Info
-        Dim lblCustomerInfo As New Label With {
-            .Text = $"Customer: {customerName}",
-            .Font = New Font("Arial", 11, FontStyle.Bold),
-            .Location = New Point(50, 70),
-            .Size = New Size(400, 25),
-            .ForeColor = Color.DarkGreen
-        }
-        Me.Controls.Add(lblCustomerInfo)
+        Dim customerCard As Panel = MakeCard(30, 80, 680, 92)
+        customerCard.Controls.Add(MakeFieldLabel("Customer", 20, 16))
+        customerCard.Controls.Add(New Label With {
+            .Text = customerName,
+            .Location = New Point(20, 42),
+            .Size = New Size(460, 32),
+            .Font = New Font("Segoe UI", 14.0F, FontStyle.Bold),
+            .ForeColor = ModernTheme.Accent
+        })
+        Dim btnChange As Button = ModernTheme.MakeSecondaryButton("Change customer")
+        btnChange.Location = New Point(500, 24)
+        btnChange.Width = 160
+        btnChange.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnChange.Click, Sub(s, ev) ShowPhoneCheckSection()
+        customerCard.Controls.Add(btnChange)
+        Me.Controls.Add(customerCard)
 
-        ' Items Section Title
-        Dim lblItemsTitle As New Label With {
-            .Text = "Items to Issue:",
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .Location = New Point(50, 110),
-            .Size = New Size(200, 25),
-            .ForeColor = Color.DarkSlateGray
-        }
-        Me.Controls.Add(lblItemsTitle)
-
-        ' Container for items (like PHP's items-container-existing)
-        Dim pnlItemsContainer As New Panel With {
-            .Location = New Point(50, 140),
-            .Size = New Size(500, 120),
-            .BackColor = Color.White,
-            .BorderStyle = BorderStyle.FixedSingle,
-            .Padding = New Padding(10)
-        }
-        Me.Controls.Add(pnlItemsContainer)
-
-        ' Add initial item row
-        AddItemRow(pnlItemsContainer)
-
-        ' Add Item Button
-        Dim btnAddItem As New Button With {
-            .Text = "+ Add Item",
-            .Location = New Point(50, 270),
-            .Size = New Size(100, 30),
-            .BackColor = Color.FromArgb(229, 231, 235),
-            .Font = New Font("Arial", 9),
-            .FlatStyle = FlatStyle.Flat
-        }
-        AddHandler btnAddItem.Click, Sub(s, ev) AddItemRow(pnlItemsContainer)
-        Me.Controls.Add(btnAddItem)
-
-        ' Remarks
-        Dim lblRemarks As New Label With {
-            .Text = "Remarks:",
-            .Location = New Point(50, 310),
-            .Size = New Size(120, 25),
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(lblRemarks)
-
-        txtRemarks = New TextBox With {
-            .Location = New Point(180, 310),
-            .Size = New Size(200, 60),
-            .Multiline = True,
-            .Font = New Font("Arial", 10)
-        }
-        Me.Controls.Add(txtRemarks)
-
-        ' Issue Button
-        Dim btnIssue As New Button With {
-            .Text = "Issue Parts",
-            .Location = New Point(180, 400),
-            .Size = New Size(150, 35),
-            .BackColor = Color.FromArgb(59, 130, 246),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
-        AddHandler btnIssue.Click, Sub(s, ev) ProcessIssue(False) ' False = existing customer
-        Me.Controls.Add(btnIssue)
-
-        ' Cancel Button
-        Dim btnCancel As New Button With {
-            .Text = "Cancel",
-            .Location = New Point(340, 400),
-            .Size = New Size(100, 35),
-            .BackColor = Color.FromArgb(239, 68, 68),
-            .ForeColor = Color.White,
-            .Font = New Font("Arial", 10, FontStyle.Bold),
-            .FlatStyle = FlatStyle.Flat
-        }
-        AddHandler btnCancel.Click, AddressOf btnCancel_Click
-        Me.Controls.Add(btnCancel)
+        Me.Controls.Add(BuildItemsCard(30, 192))
+        Me.Controls.Add(BuildActionsCard(30, 532, False))
+        ModernTheme.RefreshContent(Me)
+        FitToContent()
     End Sub
 
-    ' =============== ADD ITEM ROW (Dynamic like PHP) ===============
+    ' =============== ADD ITEM ROW (Dynamic) ===============
     Private Sub AddItemRow(container As Panel)
-        Dim panel As New Panel
-        panel.Size = New Size(container.Width - 20, 30)
-        panel.Location = New Point(0, itemCount * 40)
-        panel.BorderStyle = BorderStyle.None
+        Dim panel As New Panel With {
+            .Size = New Size(container.Width - 30, 36),
+            .Location = New Point(0, itemCount * 44),
+            .BackColor = ModernTheme.SurfaceAlt
+        }
 
-        ' Part Number
-        Dim txtPartNum As New TextBox With {
-    .Location = New Point(0, 0),
-    .Size = New Size(150, 25),
-    .Font = New Font("Arial", 9)
-}
+        Dim txtPartNum As TextBox = ModernTheme.MakeTextBox()
+        txtPartNum.Location = New Point(0, 0)
+        txtPartNum.Width = 200
+        txtPartNum.Font = New Font("Segoe UI", 9.5F)
         panel.Controls.Add(txtPartNum)
 
-        ' Quantity
-        Dim txtQty As New TextBox With {
-    .Location = New Point(160, 0),
-    .Size = New Size(80, 25),
-    .Font = New Font("Arial", 9),
-    .Text = "1"
-}
+        Dim txtQty As TextBox = ModernTheme.MakeTextBox()
+        txtQty.Location = New Point(210, 0)
+        txtQty.Width = 90
+        txtQty.Font = New Font("Segoe UI", 9.5F)
+        txtQty.Text = "1"
         panel.Controls.Add(txtQty)
 
-        ' Selling Price
-        Dim txtPrice As New TextBox With {
-    .Location = New Point(250, 0),
-    .Size = New Size(100, 25),
-    .Font = New Font("Arial", 9),
-    .Text = "0.00"
-}
+        Dim txtPrice As TextBox = ModernTheme.MakeTextBox()
+        txtPrice.Location = New Point(310, 0)
+        txtPrice.Width = 120
+        txtPrice.Font = New Font("Segoe UI", 9.5F)
+        txtPrice.Text = "0.00"
         panel.Controls.Add(txtPrice)
 
-        ' Remove Button
-        Dim btnRemove As New Button With {
-            .Text = "Remove",
-            .Location = New Point(360, 0),
-            .Size = New Size(80, 25),
-            .BackColor = Color.FromArgb(254, 226, 226),
-            .ForeColor = Color.FromArgb(153, 27, 27),
-            .Font = New Font("Arial", 9),
-            .FlatStyle = FlatStyle.Flat
-        }
+        Dim btnRemove As Button = ModernTheme.MakeSecondaryButton("Remove")
+        btnRemove.Location = New Point(440, 0)
+        btnRemove.Width = 100
+        btnRemove.Height = 34
+        btnRemove.Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)
+        btnRemove.ForeColor = ModernTheme.Danger
+        btnRemove.BackColor = ModernTheme.Surface
         AddHandler btnRemove.Click, Sub(s, ev)
                                         container.Controls.Remove(panel)
                                         itemPanels.Remove(panel)
+                                        panel.Dispose()
                                         ReorderItemPanels(container)
                                     End Sub
         panel.Controls.Add(btnRemove)
@@ -496,11 +503,12 @@ Public Class Issue_SparePart
         container.Controls.Add(panel)
         itemPanels.Add(panel)
         itemCount += 1
+        ModernTheme.RefreshContent(panel)
     End Sub
 
     Private Sub ReorderItemPanels(container As Panel)
         For i As Integer = 0 To itemPanels.Count - 1
-            itemPanels(i).Location = New Point(0, i * 40)
+            itemPanels(i).Location = New Point(0, i * 44)
         Next
         itemCount = itemPanels.Count
     End Sub
@@ -586,9 +594,10 @@ Public Class Issue_SparePart
 
                         Using cmd As New SqlCommand(insertSql, conn, transaction)
                             cmd.Parameters.AddWithValue("@name", $"{txtFirstName.Text.Trim()} {txtLastName.Text.Trim()}")
-                            cmd.Parameters.AddWithValue("@phone", savedPhone)
-                            cmd.Parameters.AddWithValue("@email", If(String.IsNullOrEmpty(txtEmail.Text), DBNull.Value, txtEmail.Text.Trim()))
-                            cmd.Parameters.AddWithValue("@address", If(String.IsNullOrEmpty(txtAddress.Text), DBNull.Value, txtAddress.Text.Trim()))
+                            Dim newPhone As String = If(txtNewCustomerPhone IsNot Nothing, txtNewCustomerPhone.Text.Trim(), savedPhone)
+                            cmd.Parameters.AddWithValue("@phone", If(String.IsNullOrEmpty(newPhone), DBNull.Value, CObj(newPhone)))
+                            cmd.Parameters.AddWithValue("@email", If(String.IsNullOrEmpty(txtEmail.Text), DBNull.Value, CObj(txtEmail.Text.Trim())))
+                            cmd.Parameters.AddWithValue("@address", If(String.IsNullOrEmpty(txtAddress.Text), DBNull.Value, CObj(txtAddress.Text.Trim())))
 
                             customerID = CInt(cmd.ExecuteScalar())
                             issuedTo = $"{txtFirstName.Text.Trim()} {txtLastName.Text.Trim()}"
@@ -601,7 +610,7 @@ Public Class Issue_SparePart
                     Dim invoiceSql As String = "INSERT INTO mn.SalesInvoice (CustomerID, Subtotal, TaxAmount, TotalAmount, AmountPaid, Status, Remarks) OUTPUT INSERTED.InvoiceID VALUES (@customerID, 0, 0, 0, 0, 'UNPAID', @remarks)"
                     Using cmd As New SqlCommand(invoiceSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@customerID", customerID)
-                        cmd.Parameters.AddWithValue("@remarks", If(String.IsNullOrEmpty(remarks), DBNull.Value, remarks))
+                        cmd.Parameters.AddWithValue("@remarks", If(String.IsNullOrEmpty(remarks), DBNull.Value, CObj(remarks)))
                         invoiceID = Convert.ToInt32(cmd.ExecuteScalar())
                     End Using
 
@@ -622,7 +631,7 @@ Public Class Issue_SparePart
 
                         ' VALIDATION 2: Check stock availability (PHP: SELECT SUM(QuantityRemaining))
                         Dim stockSql As String = "SELECT SUM(QuantityRemaining) AS TotalAvailable " &
-                                                "FROM mn.PurchaseBatch WHERE PartNumber = @partNum"
+                                                "FROM mn.PurchaseBatch WITH (UPDLOCK, ROWLOCK) WHERE PartNumber = @partNum"
                         Dim availableQty As Integer = 0
 
                         Using cmd As New SqlCommand(stockSql, conn, transaction)
@@ -646,9 +655,9 @@ Public Class Issue_SparePart
                         Dim originalQty As Integer = item.Quantity ' Save for later use
 
                         ' Get batches with available stock, oldest first
-                        Dim batchSql As String = "SELECT * FROM mn.PurchaseBatch " &
+                        Dim batchSql As String = "SELECT * FROM mn.PurchaseBatch WITH (UPDLOCK, ROWLOCK) " &
                                                 "WHERE PartNumber = @partNum AND QuantityRemaining > 0 " &
-                                                "ORDER BY PurchaseDate ASC"
+                                                "ORDER BY PurchaseDate ASC, BatchID ASC"
 
                         Dim batches As New List(Of BatchData)
                         Dim totalCOGS As Decimal = 0
@@ -787,11 +796,12 @@ Public Class Issue_SparePart
                 Catch ex As Exception
                     ' Rollback transaction (PHP: sqlsrv_rollback)
                     transaction.Rollback()
-                    Throw ex
+                    Throw
                 End Try
             End Using
 
         Catch ex As Exception
+            AppLogger.Error("Failed to issue spare parts", ex)
             MessageBox.Show("Error issuing parts: " & ex.Message, "Database Error",
                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try

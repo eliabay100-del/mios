@@ -10,11 +10,11 @@ Public Module AccountingService
     Public Sub WriteAudit(conn As SqlConnection, transaction As SqlTransaction, actionCode As String, entityType As String, entityID As Integer, details As String)
         Const auditSql As String = "INSERT INTO mn.AuditLog (UserID, ActionCode, EntityType, EntityID, Details) VALUES (@userID, @actionCode, @entityType, @entityID, @details)"
         Using cmd As New SqlCommand(auditSql, conn, transaction)
-            cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, SecurityContext.CurrentUserID))
+            cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, CObj(SecurityContext.CurrentUserID)))
             cmd.Parameters.AddWithValue("@actionCode", actionCode)
             cmd.Parameters.AddWithValue("@entityType", entityType)
             cmd.Parameters.AddWithValue("@entityID", entityID)
-            cmd.Parameters.AddWithValue("@details", If(String.IsNullOrEmpty(details), DBNull.Value, details))
+            cmd.Parameters.AddWithValue("@details", If(String.IsNullOrEmpty(details), DBNull.Value, CObj(details)))
             cmd.ExecuteNonQuery()
         End Using
     End Sub

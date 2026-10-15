@@ -3,35 +3,73 @@ Imports System.Windows.Forms
 Imports System.Drawing
 
 Public Class LoginNew
-    Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
+    Private connectionString As String = DBModule.ConnString
 
     ' Controls
-    Private WithEvents txtUsername As New TextBox With {.Location = New Point(130, 70), .Size = New Size(200, 25)}
-    Private WithEvents txtPassword As New TextBox With {.Location = New Point(130, 110), .Size = New Size(200, 25), .PasswordChar = "*"c}
-    Private WithEvents btnLogin As New Button With {.Text = "Login", .Location = New Point(50, 170), .Size = New Size(80, 30)}
-    Private WithEvents lblError As New Label With {.ForeColor = Color.Red, .Location = New Point(50, 140), .Size = New Size(300, 20)}
+    Private WithEvents txtUsername As New TextBox With {.Location = New Point(138, 172), .Size = New Size(240, 25), .TabIndex = 0}
+    Private WithEvents txtPassword As New TextBox With {.Location = New Point(138, 214), .Size = New Size(240, 25), .PasswordChar = "*"c, .TabIndex = 1}
+    Private WithEvents btnLogin As New Button With {.Text = "Sign in", .Location = New Point(138, 282), .Size = New Size(240, 44), .TabIndex = 2}
+    Private WithEvents lblError As New Label With {.ForeColor = Color.Red, .Location = New Point(48, 252), .Size = New Size(330, 20)}
 
     ' Properties to hold login info
     Public Property LoginSuccessful As Boolean = False
     Public Property UserID As Integer = 0
     Public Property Username As String = ""
 
+    ' Simple in-process brute-force protection.
+    Private Const MaxFailedAttempts As Integer = 5
+    Private ReadOnly LockoutDuration As TimeSpan = TimeSpan.FromSeconds(30)
+    Private failedAttempts As Integer = 0
+    Private lockoutUntil As DateTime = DateTime.MinValue
+
     Public Sub New()
         InitializeComponent()
         ' Form settings
         ModernTheme.ApplyWindowTheme(Me)
-        Me.Text = "Login - Inventory System"
-        Me.Size = New Size(400, 250)
+        Me.Text = "MIOS Inventory Management"
+        Me.Size = New Size(440, 400)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
+
+        ' Logo and heading
+        Dim logo As PictureBox = ModernTheme.MakeLogo(88)
+        If logo IsNot Nothing Then
+            logo.Location = New Point(173, 22)
+            logo.BackColor = ModernTheme.Surface
+            Me.Controls.Add(logo)
+        End If
+
+        Dim lblTitle As New Label With {
+            .Text = "MIOS Inventory Management",
+            .Location = New Point(0, 122),
+            .Size = New Size(434, 30),
+            .TextAlign = ContentAlignment.MiddleCenter,
+            .Font = New Font("Segoe UI", 15.0F, FontStyle.Bold),
+            .ForeColor = ModernTheme.PrimaryText
+        }
+        Me.Controls.Add(lblTitle)
 
         ' Add controls
-        Me.Controls.Add(New Label With {.Text = "Username:", .Location = New Point(50, 70), .Size = New Size(80, 25)})
+        Me.Controls.Add(New Label With {.Text = "Username:", .Location = New Point(48, 176), .Size = New Size(84, 25)})
         Me.Controls.Add(txtUsername)
-        Me.Controls.Add(New Label With {.Text = "Password:", .Location = New Point(50, 110), .Size = New Size(80, 25)})
+        Me.Controls.Add(New Label With {.Text = "Password:", .Location = New Point(48, 218), .Size = New Size(84, 25)})
         Me.Controls.Add(txtPassword)
         Me.Controls.Add(lblError)
         Me.Controls.Add(btnLogin)
+
+        ' Enter submits from anywhere on the form, and TAB moves username -> password -> Sign in.
+        Me.AcceptButton = btnLogin
+
+        ' Style the sign-in button
+        btnLogin.BackColor = ModernTheme.Accent
+        btnLogin.ForeColor = Color.White
+        btnLogin.FlatStyle = FlatStyle.Flat
+        btnLogin.FlatAppearance.BorderSize = 0
+        btnLogin.UseVisualStyleBackColor = False
+        btnLogin.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
+        btnLogin.Cursor = Cursors.Hand
 
         ' Event handlers
         AddHandler btnLogin.Click, AddressOf btnLogin_Click
@@ -73,6 +111,12 @@ Public Class LoginNew
     Private Sub AuthenticateUser()
         lblError.Text = ""
 
+        If DateTime.Now < lockoutUntil Then
+            Dim secondsLeft As Double = Math.Ceiling((lockoutUntil - DateTime.Now).TotalSeconds)
+            lblError.Text = $"Too many failed attempts. Try again in {secondsLeft:0}s."
+            Return
+        End If
+
         If String.IsNullOrWhiteSpace(txtUsername.Text) Then
             lblError.Text = "Username is required"
             txtUsername.Focus()
@@ -93,20 +137,28 @@ Public Class LoginNew
                     cmd.Parameters.AddWithValue("@u", usernameInput)
                     Using reader = cmd.ExecuteReader()
                         If reader.Read() Then
+                            ' Capture the user id before verification so a legacy
+                            ' hash is migrated against the correct row.
+                            Dim authedUserID As Integer = Convert.ToInt32(reader("UserID"))
                             Dim storedHash = reader("PasswordHash").ToString()
+
                             Dim passwordValid As Boolean = SecurityService.VerifyPassword(txtPassword.Text, storedHash)
                             If Not passwordValid AndAlso SecurityService.IsLegacyHash(storedHash) Then
                                 passwordValid = SecurityService.VerifyLegacySha256(txtPassword.Text, storedHash)
-                                If passwordValid Then MigratePasswordHash(UserID, txtPassword.Text)
+                                If passwordValid Then MigratePasswordHash(authedUserID, txtPassword.Text)
                             End If
+
                             If passwordValid Then
                                 ' Login success
+                                failedAttempts = 0
+                                lockoutUntil = DateTime.MinValue
                                 LoginSuccessful = True
-                                UserID = Convert.ToInt32(reader("UserID"))
+                                UserID = authedUserID
                                 Username = reader("Username").ToString()
                                 SecurityContext.CurrentUserID = UserID
                                 SecurityContext.CurrentUsername = Username
                                 SecurityContext.CurrentRole = reader("RoleName").ToString()
+                                SecurityContext.LoadPermissions()
 
                                 ' Open Dashboard
                                 Dim dashboard As New Dashboard()
@@ -114,19 +166,31 @@ Public Class LoginNew
                                 dashboard.UserID = Me.UserID
                                 Me.Hide()
                                 dashboard.ShowDialog()
+                                SecurityContext.Clear()
                                 Me.Close()
                             Else
-                                lblError.Text = "Invalid password"
+                                RegisterFailedAttempt()
+                                lblError.Text = "Invalid username or password"
                             End If
                         Else
-                            lblError.Text = "Invalid username"
+                            RegisterFailedAttempt()
+                            lblError.Text = "Invalid username or password"
                         End If
                     End Using
                 End Using
             End Using
         Catch ex As Exception
-            MessageBox.Show("Login error: " & ex.Message)
+            AppLogger.Error("Login failed", ex)
+            MessageBox.Show("Unable to sign in. Please check that the database is available and try again.", "Sign in", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub RegisterFailedAttempt()
+        failedAttempts += 1
+        If failedAttempts >= MaxFailedAttempts Then
+            lockoutUntil = DateTime.Now.Add(LockoutDuration)
+            failedAttempts = 0
+        End If
     End Sub
 
     Private Sub MigratePasswordHash(userID As Integer, password As String)

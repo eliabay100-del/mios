@@ -155,24 +155,26 @@ Public Class View_Inventory
     Private Function GetInventoryFromDB() As InventoryItem()
         Dim itemsList As New List(Of InventoryItem)
         Try
-            DBModule.OpenConnection()
-            Dim query As String = "SELECT s.Description, s.PartNumber, c.CategoryName, s.Quantity, s.UnitPrice, s.ReorderLevel FROM mn.SpareParts s JOIN mn.Category c ON s.CategoryID = c.CategoryID ORDER BY s.PartNumber"
-            Using cmd As New SqlCommand(query, DBModule.Conn)
-                Using reader As SqlDataReader = cmd.ExecuteReader()
-                    Do While reader.Read()
-                        itemsList.Add(New InventoryItem With {
-                            .PartNumber = reader("PartNumber").ToString(),
-                            .Description = reader("Description").ToString(),
-                            .CategoryName = reader("CategoryName").ToString(),
-                            .Quantity = CInt(reader("Quantity")),
-                            .UnitPrice = CDec(reader("UnitPrice")),
-                            .ReorderLevel = CInt(reader("ReorderLevel"))
-                        })
-                    Loop
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Dim query As String = "SELECT s.Description, s.PartNumber, c.CategoryName, s.Quantity, s.UnitPrice, s.ReorderLevel FROM mn.SpareParts s JOIN mn.Category c ON s.CategoryID = c.CategoryID ORDER BY s.PartNumber"
+                Using cmd As New SqlCommand(query, conn)
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        Do While reader.Read()
+                            itemsList.Add(New InventoryItem With {
+                                .PartNumber = reader("PartNumber").ToString(),
+                                .Description = reader("Description").ToString(),
+                                .CategoryName = reader("CategoryName").ToString(),
+                                .Quantity = CInt(reader("Quantity")),
+                                .UnitPrice = CDec(reader("UnitPrice")),
+                                .ReorderLevel = CInt(reader("ReorderLevel"))
+                            })
+                        Loop
+                    End Using
                 End Using
             End Using
-            DBModule.CloseConnection()
         Catch ex As Exception
+            AppLogger.Error("Failed to load inventory", ex)
             MessageBox.Show(ex.Message)
         End Try
         Return itemsList.ToArray()
@@ -224,14 +226,17 @@ Public Class View_Inventory
 
     Private Sub LoadCategories()
         Try
-            DBModule.OpenConnection()
-            Dim cmd As New SqlCommand("SELECT CategoryName FROM mn.Category", DBModule.Conn)
-            Dim reader = cmd.ExecuteReader()
-            lstCategories.Items.Clear()
-            While reader.Read()
-                lstCategories.Items.Add(reader(0).ToString())
-            End While
-            DBModule.CloseConnection()
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Using cmd As New SqlCommand("SELECT CategoryName FROM mn.Category", conn)
+                    Using reader = cmd.ExecuteReader()
+                        lstCategories.Items.Clear()
+                        While reader.Read()
+                            lstCategories.Items.Add(reader(0).ToString())
+                        End While
+                    End Using
+                End Using
+            End Using
         Catch : End Try
     End Sub
 
@@ -267,19 +272,38 @@ Public Class View_Inventory
         Try
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-                Const query As String = "UPDATE mn.SpareParts SET Description = @description, Quantity = @quantity, UnitPrice = @unitPrice, ReorderLevel = @reorderLevel WHERE PartNumber = @partNumber"
-                Using cmd As New SqlCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@description", description)
-                    cmd.Parameters.AddWithValue("@quantity", quantity)
-                    cmd.Parameters.AddWithValue("@unitPrice", unitPrice)
-                    cmd.Parameters.AddWithValue("@reorderLevel", reorderLevel)
-                    cmd.Parameters.AddWithValue("@partNumber", partNumber)
-                    cmd.ExecuteNonQuery()
+                Using transaction = conn.BeginTransaction()
+                    Dim previousQuantity As Integer
+                    Using cmd As New SqlCommand("SELECT Quantity FROM mn.SpareParts WITH (UPDLOCK) WHERE PartNumber = @partNumber", conn, transaction)
+                        cmd.Parameters.AddWithValue("@partNumber", partNumber)
+                        Dim result As Object = cmd.ExecuteScalar()
+                        If result Is Nothing Then Throw New Exception("Part was not found.")
+                        previousQuantity = Convert.ToInt32(result)
+                    End Using
+
+                    Const query As String = "UPDATE mn.SpareParts SET Description = @description, Quantity = @quantity, UnitPrice = @unitPrice, ReorderLevel = @reorderLevel WHERE PartNumber = @partNumber"
+                    Using cmd As New SqlCommand(query, conn, transaction)
+                        cmd.Parameters.AddWithValue("@description", description)
+                        cmd.Parameters.AddWithValue("@quantity", quantity)
+                        cmd.Parameters.AddWithValue("@unitPrice", unitPrice)
+                        cmd.Parameters.AddWithValue("@reorderLevel", reorderLevel)
+                        cmd.Parameters.AddWithValue("@partNumber", partNumber)
+                        cmd.ExecuteNonQuery()
+                    End Using
+
+                    ' Keep the purchase-batch ledger in step with a manual quantity edit.
+                    Dim difference As Integer = quantity - previousQuantity
+                    If difference <> 0 Then
+                        InventoryService.ApplyAdjustment(conn, transaction, partNumber, difference, unitPrice)
+                    End If
+
+                    transaction.Commit()
                 End Using
             End Using
             MessageBox.Show("Inventory item saved.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
             LoadInventory()
         Catch ex As Exception
+            AppLogger.Error("Failed to save inventory item", ex)
             MessageBox.Show("Unable to save inventory item: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
 

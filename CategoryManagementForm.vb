@@ -73,6 +73,7 @@ Public Class CategoryManagementForm
                 End Using
             End Using
         Catch ex As Exception
+            AppLogger.Error("Failed to load categories", ex)
             MessageBox.Show("Unable to load categories: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
@@ -98,6 +99,7 @@ Public Class CategoryManagementForm
             txtCategory.Clear()
             LoadCategories()
         Catch ex As Exception
+            AppLogger.Error("Failed to add category", ex)
             MessageBox.Show("Unable to add category: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub

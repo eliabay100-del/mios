@@ -203,34 +203,36 @@ Public Class View_StockCard
     Private Function GetStockMovementsFromDB(Optional ByVal partFilter As String = "") As StockMovement()
         Dim list As New List(Of StockMovement)
         Try
-            DBModule.OpenConnection()
-            Dim query As String = "SELECT MovementDate, PartNumber, " &
-                "CASE WHEN MovementType = 'IN' THEN Quantity ELSE 0 END AS InQty, " &
-                "CASE WHEN MovementType = 'OUT' THEN Quantity ELSE 0 END AS OutQty, " &
-                "ReferenceType, Remarks FROM mn.StockCard"
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Dim query As String = "SELECT MovementDate, PartNumber, " &
+                    "CASE WHEN MovementType = 'IN' THEN Quantity ELSE 0 END AS InQty, " &
+                    "CASE WHEN MovementType = 'OUT' THEN Quantity ELSE 0 END AS OutQty, " &
+                    "ReferenceType, Remarks FROM mn.StockCard"
 
-            If Not String.IsNullOrEmpty(partFilter) Then query &= " WHERE PartNumber = @p"
-            query &= " ORDER BY MovementDate ASC"
+                If Not String.IsNullOrEmpty(partFilter) Then query &= " WHERE PartNumber = @p"
+                query &= " ORDER BY MovementDate ASC"
 
-            Using cmd As New SqlCommand(query, DBModule.Conn)
-                If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", partFilter)
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        list.Add(New StockMovement With {
-                            .MovementDate = CDate(reader("MovementDate")),
-                            .PartNumber = reader("PartNumber").ToString(),
-                            .InQty = CInt(reader("InQty")),
-                            .OutQty = CInt(reader("OutQty")),
-                            .Reference = reader("ReferenceType").ToString(),
-                            .Remarks = If(reader("Remarks") Is DBNull.Value, "", reader("Remarks").ToString())
-                        })
-                    End While
+                Using cmd As New SqlCommand(query, conn)
+                    If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", partFilter)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            list.Add(New StockMovement With {
+                                .MovementDate = CDate(reader("MovementDate")),
+                                .PartNumber = reader("PartNumber").ToString(),
+                                .InQty = CInt(reader("InQty")),
+                                .OutQty = CInt(reader("OutQty")),
+                                .Reference = reader("ReferenceType").ToString(),
+                                .Remarks = If(reader("Remarks") Is DBNull.Value, "", reader("Remarks").ToString())
+                            })
+                        End While
+                    End Using
                 End Using
             End Using
-            DBModule.CloseConnection()
 
             CalculateRunningBalance(list)
         Catch ex As Exception
+            AppLogger.Error("Failed to load stock movements", ex)
             MessageBox.Show("Database Connection Error: " & ex.Message)
         End Try
         Return list.ToArray()
@@ -256,12 +258,14 @@ Public Class View_StockCard
 
     Private Function PartNumberExists(partNumber As String) As Boolean
         Try
-            DBModule.OpenConnection()
-            Dim cmd As New SqlCommand("SELECT COUNT(*) FROM mn.SpareParts WHERE PartNumber = @p", DBModule.Conn)
-            cmd.Parameters.AddWithValue("@p", partNumber)
-            Dim count As Integer = CInt(cmd.ExecuteScalar())
-            DBModule.CloseConnection()
-            Return count > 0
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Using cmd As New SqlCommand("SELECT COUNT(*) FROM mn.SpareParts WHERE PartNumber = @p", conn)
+                    cmd.Parameters.AddWithValue("@p", partNumber)
+                    Dim count As Integer = CInt(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
         Catch
             Return False
         End Try

@@ -117,31 +117,32 @@ Public Class Customer
     Private Function GetCustomersFromDB(Optional ByVal searchTerm As String = "") As CustomerInfo()
         Dim customersList As New List(Of CustomerInfo)
         Try
-            DBModule.OpenConnection()
-            Dim query As String = "SELECT CustomerID, CustomerName, Phone, Email, Address FROM mn.Customer"
-            If Not String.IsNullOrEmpty(searchTerm) Then
-                query &= " WHERE CustomerName LIKE @s OR Phone LIKE @s OR Email LIKE @s"
-            End If
-            query &= " ORDER BY CustomerName"
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Dim query As String = "SELECT CustomerID, CustomerName, Phone, Email, Address FROM mn.Customer"
+                If Not String.IsNullOrEmpty(searchTerm) Then
+                    query &= " WHERE CustomerName LIKE @s OR Phone LIKE @s OR Email LIKE @s"
+                End If
+                query &= " ORDER BY CustomerName"
 
-            Using cmd As New SqlCommand(query, DBModule.Conn)
-                cmd.Parameters.AddWithValue("@s", "%" & searchTerm & "%")
-                Using reader As SqlDataReader = cmd.ExecuteReader()
-                    Do While reader.Read()
-                        customersList.Add(New CustomerInfo With {
-                            .CustomerID = CInt(reader("CustomerID")),
-                            .FullName = reader("CustomerName").ToString(),
-                            .Phone = If(IsDBNull(reader("Phone")), "N/A", reader("Phone").ToString()),
-                            .Email = If(IsDBNull(reader("Email")), "N/A", reader("Email").ToString()),
-                            .Address = If(IsDBNull(reader("Address")), "N/A", reader("Address").ToString())
-                        })
-                    Loop
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@s", "%" & searchTerm & "%")
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        Do While reader.Read()
+                            customersList.Add(New CustomerInfo With {
+                                .CustomerID = CInt(reader("CustomerID")),
+                                .FullName = reader("CustomerName").ToString(),
+                                .Phone = If(IsDBNull(reader("Phone")), "N/A", reader("Phone").ToString()),
+                                .Email = If(IsDBNull(reader("Email")), "N/A", reader("Email").ToString()),
+                                .Address = If(IsDBNull(reader("Address")), "N/A", reader("Address").ToString())
+                            })
+                        Loop
+                    End Using
                 End Using
             End Using
         Catch ex As Exception
+            AppLogger.Error("Failed to load customers", ex)
             MessageBox.Show("DB Error: " & ex.Message)
-        Finally
-            DBModule.CloseConnection()
         End Try
         Return customersList.ToArray()
     End Function
@@ -205,6 +206,7 @@ Public Class Customer
                 End If
             End Using
         Catch ex As Exception
+            AppLogger.Error("Failed to export customers", ex)
             MessageBox.Show("Export Error: " & ex.Message)
         End Try
     End Sub

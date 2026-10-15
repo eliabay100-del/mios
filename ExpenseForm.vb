@@ -46,10 +46,13 @@ Public Class ExpenseForm
     Private Sub LoadAccounts()
         Using conn As New SqlConnection(DBModule.ConnString)
             conn.Open()
-            Using cmd As New SqlCommand("SELECT AccountID, AccountCode + ' - ' + AccountName FROM mn.Account WHERE AccountType = 'EXPENSE' ORDER BY AccountCode", conn)
+            ' Cost of Goods Sold (5000) is driven by inventory issues, not manual
+            ' expenses, and the financial report excludes it from operating
+            ' expenses - so keep it out of this picker to avoid double counting.
+            Using cmd As New SqlCommand("SELECT AccountID, AccountCode, AccountName FROM mn.Account WHERE AccountType = 'EXPENSE' AND AccountCode <> '5000' ORDER BY AccountCode", conn)
                 Using reader = cmd.ExecuteReader()
                     While reader.Read()
-                        cmbAccount.Items.Add(New AccountItem With {.ID = reader.GetInt32(0), .Name = reader.GetString(1)})
+                        cmbAccount.Items.Add(New AccountItem With {.ID = reader.GetInt32(0), .Code = reader.GetString(1), .Name = reader.GetString(2)})
                     End While
                 End Using
             End Using
@@ -59,9 +62,10 @@ Public Class ExpenseForm
 
     Private Class AccountItem
         Public Property ID As Integer
+        Public Property Code As String
         Public Property Name As String
         Public Overrides Function ToString() As String
-            Return Name
+            Return Code & " - " & Name
         End Function
     End Class
 
@@ -82,11 +86,11 @@ Public Class ExpenseForm
                         cmd.Parameters.AddWithValue("@amount", amount)
                         cmd.Parameters.AddWithValue("@description", txtDescription.Text.Trim())
                         cmd.Parameters.AddWithValue("@method", cmbMethod.Text)
-                        cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, SecurityContext.CurrentUserID))
+                        cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, CObj(SecurityContext.CurrentUserID)))
                         expenseID = Convert.ToInt32(cmd.ExecuteScalar())
                     End Using
                     AccountingService.PostJournalEntry(conn, transaction, "EXPENSE", expenseID, txtDescription.Text.Trim(), New List(Of JournalLineData) From {
-                        New JournalLineData With {.AccountCode = account.Name.Substring(0, 4), .Debit = amount, .Credit = 0},
+                        New JournalLineData With {.AccountCode = account.Code, .Debit = amount, .Credit = 0},
                         New JournalLineData With {.AccountCode = "1000", .Debit = 0, .Credit = amount}
                     })
                     transaction.Commit()
@@ -95,6 +99,7 @@ Public Class ExpenseForm
             MessageBox.Show("Expense recorded.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Me.Close()
         Catch ex As Exception
+            AppLogger.Error("Failed to record expense", ex)
             MessageBox.Show("Unable to save expense: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub

@@ -156,9 +156,9 @@ Public Class Supplier
                                         txtSearch.Clear()
                                         LoadSuppliers("")
                                     End Sub
-        AddHandler btnViewRecords.Click, AddressOf HandleViewRecords
+        AddHandler btnViewRecords.Click, Sub(s As Object, ev As EventArgs) HandleViewRecords()
         AddHandler btnBackToSuppliers.Click, Sub() ShowSupplierList()
-        AddHandler btnExport.Click, AddressOf ExportToCSV
+        AddHandler btnExport.Click, Sub(s As Object, ev As EventArgs) ExportToCSV()
         AddHandler dgvSuppliers.CellClick, AddressOf HandleCellClick
         LoadSuppliers("")
     End Sub
@@ -166,38 +166,39 @@ Public Class Supplier
     Private Sub LoadSuppliers(searchTerm As String)
         Dim list As New List(Of SupplierInfo)
         Try
-            DBModule.OpenConnection()
-            Dim sql As String = "SELECT * FROM mn.Supplier"
-            If Not String.IsNullOrEmpty(searchTerm) Then
-                sql &= " WHERE SupplierName LIKE @s OR Phone LIKE @s"
-            End If
-            Using cmd As New SqlCommand(sql, DBModule.Conn)
-                cmd.Parameters.AddWithValue("@s", "%" & searchTerm & "%")
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        list.Add(New SupplierInfo With {
-                            .SupplierID = CInt(reader("SupplierID")),
-                            .SupplierName = reader("SupplierName").ToString(),
-                            .Phone = If(IsDBNull(reader("Phone")), "N/A", reader("Phone").ToString()),
-                            .Address = If(IsDBNull(reader("Address")), "N/A", reader("Address").ToString())
-                        })
-                    End While
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Dim sql As String = "SELECT * FROM mn.Supplier"
+                If Not String.IsNullOrEmpty(searchTerm) Then
+                    sql &= " WHERE SupplierName LIKE @s OR Phone LIKE @s"
+                End If
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@s", "%" & searchTerm & "%")
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            list.Add(New SupplierInfo With {
+                                .SupplierID = CInt(reader("SupplierID")),
+                                .SupplierName = reader("SupplierName").ToString(),
+                                .Phone = If(IsDBNull(reader("Phone")), "N/A", reader("Phone").ToString()),
+                                .Address = If(IsDBNull(reader("Address")), "N/A", reader("Address").ToString())
+                            })
+                        End While
+                    End Using
                 End Using
+
+                suppliersArray = list.ToArray()
+                filteredArray = suppliersArray
+
+                dgvSuppliers.Rows.Clear()
+                For Each s In filteredArray
+                    Dim rowIndex As Integer = dgvSuppliers.Rows.Add(s.SupplierName, s.Phone, s.Address, "View records")
+                    dgvSuppliers.Rows(rowIndex).Tag = s.SupplierID
+                Next
+                btnViewRecords.Enabled = (dgvSuppliers.Rows.Count > 0)
             End Using
-
-            suppliersArray = list.ToArray()
-            filteredArray = suppliersArray
-
-            dgvSuppliers.Rows.Clear()
-            For Each s In filteredArray
-                Dim rowIndex As Integer = dgvSuppliers.Rows.Add(s.SupplierName, s.Phone, s.Address, "View records")
-                dgvSuppliers.Rows(rowIndex).Tag = s.SupplierID
-            Next
-            btnViewRecords.Enabled = (dgvSuppliers.Rows.Count > 0)
         Catch ex As Exception
+            AppLogger.Error("Failed to load suppliers", ex)
             MessageBox.Show("Error loading suppliers: " & ex.Message)
-        Finally
-            DBModule.CloseConnection()
         End Try
     End Sub
 
@@ -231,41 +232,42 @@ Public Class Supplier
 
         Dim list As New List(Of PurchaseSummary)
         Try
-            DBModule.OpenConnection()
-            Dim sql As String = "SELECT CAST(PurchaseDate AS DATE) as PDate, SUM(QuantityPurchased) as TotalQty, SUM(QuantityPurchased * UnitCost) as TotalCost FROM mn.PurchaseBatch WHERE SupplierID = @id GROUP BY CAST(PurchaseDate AS DATE) ORDER BY PDate DESC"
-            Using cmd As New SqlCommand(sql, DBModule.Conn)
-                cmd.Parameters.AddWithValue("@id", id)
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        list.Add(New PurchaseSummary With {
-                            .PurchaseDate = CDate(reader("PDate")),
-                            .TotalQuantityPurchased = CInt(reader("TotalQty")),
-                            .TotalCost = CDec(reader("TotalCost"))
-                        })
-                    End While
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Dim sql As String = "SELECT CAST(PurchaseDate AS DATE) as PDate, SUM(QuantityPurchased) as TotalQty, SUM(QuantityPurchased * UnitCost) as TotalCost FROM mn.PurchaseBatch WHERE SupplierID = @id GROUP BY CAST(PurchaseDate AS DATE) ORDER BY PDate DESC"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@id", id)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            list.Add(New PurchaseSummary With {
+                                .PurchaseDate = CDate(reader("PDate")),
+                                .TotalQuantityPurchased = CInt(reader("TotalQty")),
+                                .TotalCost = CDec(reader("TotalCost"))
+                            })
+                        End While
+                    End Using
                 End Using
+
+                purchaseSummaryArray = list.ToArray()
+
+                dgvPurchases.Columns.Clear()
+                dgvPurchases.Columns.Add("Date", "Purchase Date")
+                dgvPurchases.Columns.Add("Qty", "Items Received")
+                dgvPurchases.Columns.Add("Cost", "Total Value")
+                dgvPurchases.Rows.Clear()
+                For Each p In purchaseSummaryArray
+                    dgvPurchases.Rows.Add(p.PurchaseDate.ToString("yyyy-MM-dd"), p.TotalQuantityPurchased, p.TotalCost.ToString("N2"))
+                Next
+
+                dgvSuppliers.Visible = False
+                dgvPurchases.Visible = True
+                lblSupplierTitle.Text = "Purchase history: " & name.ToUpper()
+                lblSupplierTitle.Visible = True
+                btnBackToSuppliers.Visible = True
             End Using
-
-            purchaseSummaryArray = list.ToArray()
-
-            dgvPurchases.Columns.Clear()
-            dgvPurchases.Columns.Add("Date", "Purchase Date")
-            dgvPurchases.Columns.Add("Qty", "Items Received")
-            dgvPurchases.Columns.Add("Cost", "Total Value")
-            dgvPurchases.Rows.Clear()
-            For Each p In purchaseSummaryArray
-                dgvPurchases.Rows.Add(p.PurchaseDate.ToString("yyyy-MM-dd"), p.TotalQuantityPurchased, p.TotalCost.ToString("N2"))
-            Next
-
-            dgvSuppliers.Visible = False
-            dgvPurchases.Visible = True
-            lblSupplierTitle.Text = "Purchase history: " & name.ToUpper()
-            lblSupplierTitle.Visible = True
-            btnBackToSuppliers.Visible = True
         Catch ex As Exception
+            AppLogger.Error("Failed to load supplier purchases", ex)
             MessageBox.Show("Error loading purchases: " & ex.Message)
-        Finally
-            DBModule.CloseConnection()
         End Try
     End Sub
 
@@ -291,6 +293,7 @@ Public Class Supplier
                 End If
             End Using
         Catch ex As Exception
+            AppLogger.Error("Failed to export suppliers", ex)
             MessageBox.Show("Export failed: " & ex.Message)
         End Try
     End Sub

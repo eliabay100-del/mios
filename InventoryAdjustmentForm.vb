@@ -65,9 +65,14 @@ Public Class InventoryAdjustmentForm
                 conn.Open()
                 Using transaction = conn.BeginTransaction()
                     Dim previousQuantity As Integer
-                    Using cmd As New SqlCommand("SELECT Quantity FROM mn.SpareParts WHERE PartNumber = @part", conn, transaction)
+                    Dim unitCost As Decimal
+                    Using cmd As New SqlCommand("SELECT Quantity, UnitPrice FROM mn.SpareParts WHERE PartNumber = @part", conn, transaction)
                         cmd.Parameters.AddWithValue("@part", cmbPart.Text)
-                        previousQuantity = Convert.ToInt32(cmd.ExecuteScalar())
+                        Using reader = cmd.ExecuteReader()
+                            If Not reader.Read() Then Throw New Exception("Part was not found.")
+                            previousQuantity = Convert.ToInt32(reader("Quantity"))
+                            unitCost = Convert.ToDecimal(reader("UnitPrice"))
+                        End Using
                     End Using
                     Dim difference As Integer = newQuantity - previousQuantity
                     Dim adjustmentID As Integer
@@ -77,7 +82,7 @@ Public Class InventoryAdjustmentForm
                         cmd.Parameters.AddWithValue("@new", newQuantity)
                         cmd.Parameters.AddWithValue("@difference", difference)
                         cmd.Parameters.AddWithValue("@reason", txtReason.Text.Trim())
-                        cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, SecurityContext.CurrentUserID))
+                        cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, CObj(SecurityContext.CurrentUserID)))
                         adjustmentID = Convert.ToInt32(cmd.ExecuteScalar())
                     End Using
                     Using cmd As New SqlCommand("UPDATE mn.SpareParts SET Quantity = @quantity WHERE PartNumber = @part", conn, transaction)
@@ -85,6 +90,9 @@ Public Class InventoryAdjustmentForm
                         cmd.Parameters.AddWithValue("@part", cmbPart.Text)
                         cmd.ExecuteNonQuery()
                     End Using
+
+                    ' Keep the purchase-batch ledger aligned with the master quantity.
+                    InventoryService.ApplyAdjustment(conn, transaction, cmbPart.Text, difference, unitCost)
                     If difference <> 0 Then
                         Using cmd As New SqlCommand("INSERT INTO mn.StockCard (PartNumber, MovementType, Quantity, ReferenceType, Remarks) VALUES (@part, @movement, @quantity, 'Adjustment', @reason)", conn, transaction)
                             cmd.Parameters.AddWithValue("@part", cmbPart.Text)
@@ -101,6 +109,7 @@ Public Class InventoryAdjustmentForm
             MessageBox.Show("Inventory adjustment saved.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Me.Close()
         Catch ex As Exception
+            AppLogger.Error("Failed to save inventory adjustment", ex)
             MessageBox.Show("Unable to save adjustment: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub

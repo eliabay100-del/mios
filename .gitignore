@@ -1,19 +1,33 @@
-```vb
-# Visual Basic build outputs
+# Visual Basic / .NET Framework build outputs
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
 *.exe
+*.exe.config
 *.dll
 *.pdb
 *.xml
+*.resources
+app.manifest
 *.manifest
-*.config
-*.settings
+*.vbproj.*.cache
+*.vbproj.FileListAbsolute.txt
+*.GenerateResource.cache
+*.AssemblyAttributes.vb
+DesignTimeResolveAssemblyReferences.cache
+DesignTimeResolveAssemblyReferencesInput.cache
+
+# Visual Studio / Rider user state
+.vs/
+.vscode/
+.idea/
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
-
-# Visual Studio Code
-.vscode/
 
 # Temporary files
 *.tmp
@@ -29,12 +43,3 @@
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# Build directories
-bin/
-obj/
-Debug/
-Release/
-x64/
-x86/
-```

@@ -9,7 +9,7 @@ Public Class ChangePasswordForm
     Private txtNewPassword As TextBox
     Private txtConfirmPassword As TextBox
     Private lblError As Label
-    Private connectionString As String = "Server=.\SQLEXPRESS;Database=Inventory;Integrated Security=True;TrustServerCertificate=True;"
+    Private connectionString As String = DBModule.ConnString
 
     Public Sub New()
         InitializeComponent()
@@ -186,6 +186,7 @@ Public Class ChangePasswordForm
                 connection.Close()
             End Using
         Catch ex As Exception
+            AppLogger.Error("Failed to change password", ex)
             lblError.Text = "Error: " & ex.Message
         End Try
     End Sub
