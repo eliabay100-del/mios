@@ -111,7 +111,8 @@ Public Class View_StockCard
             .ReadOnly = True,
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .RowHeadersVisible = False,
-            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None,
+            .AllowUserToResizeColumns = False,
             .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = ModernTheme.SurfaceAlt},
             .Font = New Font("Segoe UI", 10)
         }
@@ -125,14 +126,14 @@ Public Class View_StockCard
         dgvStockCard.Columns.Add("Reference", "Reference")
         dgvStockCard.Columns.Add("Remarks", "Remarks")
 
-        ' Adjust column weight for "Full Fit"
-        dgvStockCard.Columns("MovementDate").FillWeight = 80
-        dgvStockCard.Columns("PartNumber").FillWeight = 100
-        dgvStockCard.Columns("InQty").FillWeight = 50
-        dgvStockCard.Columns("OutQty").FillWeight = 50
-        dgvStockCard.Columns("Balance").FillWeight = 60
-        dgvStockCard.Columns("Reference").FillWeight = 100
-        dgvStockCard.Columns("Remarks").FillWeight = 180
+        ' Fixed column widths (rigid, non-resizable)
+        dgvStockCard.Columns("MovementDate").Width = 130
+        dgvStockCard.Columns("PartNumber").Width = 163
+        dgvStockCard.Columns("InQty").Width = 81
+        dgvStockCard.Columns("OutQty").Width = 81
+        dgvStockCard.Columns("Balance").Width = 98
+        dgvStockCard.Columns("Reference").Width = 163
+        dgvStockCard.Columns("Remarks").Width = 294
 
         ' Alignment
         dgvStockCard.Columns("InQty").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight

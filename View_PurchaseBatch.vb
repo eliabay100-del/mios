@@ -100,7 +100,8 @@ Public Class View_PurchaseBatch
             .ReadOnly = True,
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .RowHeadersVisible = False,
-            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None,
+            .AllowUserToResizeColumns = False,
             .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = ModernTheme.SurfaceAlt},
             .Font = New Font("Segoe UI", 10)
         }
@@ -114,14 +115,14 @@ Public Class View_PurchaseBatch
         dgvBatches.Columns.Add("UnitCost", "Unit Cost")
         dgvBatches.Columns.Add("DatePurchased", "Date")
 
-        ' Adjust column weight
-        dgvBatches.Columns("BatchID").FillWeight = 50
-        dgvBatches.Columns("PartNumber").FillWeight = 100
-        dgvBatches.Columns("SupplierName").FillWeight = 150
-        dgvBatches.Columns("QuantityPurchased").FillWeight = 70
-        dgvBatches.Columns("QuantityRemaining").FillWeight = 70
-        dgvBatches.Columns("UnitCost").FillWeight = 80
-        dgvBatches.Columns("DatePurchased").FillWeight = 90
+        ' Fixed column widths (rigid, non-resizable)
+        dgvBatches.Columns("BatchID").Width = 83
+        dgvBatches.Columns("PartNumber").Width = 166
+        dgvBatches.Columns("SupplierName").Width = 248
+        dgvBatches.Columns("QuantityPurchased").Width = 116
+        dgvBatches.Columns("QuantityRemaining").Width = 116
+        dgvBatches.Columns("UnitCost").Width = 132
+        dgvBatches.Columns("DatePurchased").Width = 149
 
         ' Alignment and Formatting
         dgvBatches.Columns("UnitCost").DefaultCellStyle.Format = "N2"

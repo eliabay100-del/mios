@@ -146,7 +146,8 @@ Public Class View_SoldItem
             .ReadOnly = True,
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             .RowHeadersVisible = False,
-            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None,
+            .AllowUserToResizeColumns = False,
             .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = ModernTheme.SurfaceAlt},
             .Font = New Font("Segoe UI", 10)
         }
@@ -160,14 +161,14 @@ Public Class View_SoldItem
         dgvSoldItems.Columns.Add("PhoneNumber", "Phone")
         dgvSoldItems.Columns.Add("Remarks", "Remarks")
 
-        ' Adjust column weight for "Full Fit"
-        dgvSoldItems.Columns("IssueDate").FillWeight = 100
-        dgvSoldItems.Columns("PartNumber").FillWeight = 100
-        dgvSoldItems.Columns("QuantityIssued").FillWeight = 50
-        dgvSoldItems.Columns("SellingPrice").FillWeight = 90
-        dgvSoldItems.Columns("CustomerName").FillWeight = 140
-        dgvSoldItems.Columns("PhoneNumber").FillWeight = 100
-        dgvSoldItems.Columns("Remarks").FillWeight = 120
+        ' Fixed column widths (rigid, non-resizable)
+        dgvSoldItems.Columns("IssueDate").Width = 144
+        dgvSoldItems.Columns("PartNumber").Width = 144
+        dgvSoldItems.Columns("QuantityIssued").Width = 72
+        dgvSoldItems.Columns("SellingPrice").Width = 130
+        dgvSoldItems.Columns("CustomerName").Width = 202
+        dgvSoldItems.Columns("PhoneNumber").Width = 144
+        dgvSoldItems.Columns("Remarks").Width = 174
 
         ' Formatting
         dgvSoldItems.Columns("SellingPrice").DefaultCellStyle.Format = "N2"
