@@ -1006,46 +1006,48 @@ Private txtSearchName As TextBox
 
     Private Sub PrintSalesReceipt(invoiceID As Integer, customer As String, items As List(Of ReceiptItemData), subtotal As Decimal, vat As Decimal, total As Decimal)
         Using pd As New Printing.PrintDocument()
+            pd.DefaultPageSettings.PaperSize = New Printing.PaperSize("Receipt80mm", 300, 2800)
+            pd.DefaultPageSettings.Margins = New System.Drawing.Printing.Margins(8, 8, 6, 6)
             AddHandler pd.PrintPage, Sub(s, eArgs)
-                Dim titleFont As New Font("Segoe UI", 14, FontStyle.Bold)
-                Dim headFont As New Font("Segoe UI", 10, FontStyle.Bold)
-                Dim font As New Font("Segoe UI", 9)
+                Dim titleFont As New Font("Consolas", 14, FontStyle.Bold)
+                Dim headFont As New Font("Consolas", 10, FontStyle.Bold)
+                Dim font As New Font("Consolas", 9)
                 Dim x As Integer = eArgs.MarginBounds.Left
                 Dim y As Integer = eArgs.MarginBounds.Top
                 Dim width As Integer = eArgs.MarginBounds.Width
-                Dim lh As Integer = CInt(New Font("Segoe UI", 9).GetHeight(eArgs.Graphics)) + 3
+                Dim lh As Integer = CInt(New Font("Consolas", 9).GetHeight(eArgs.Graphics)) + 3
 
                 eArgs.Graphics.DrawString("MIOS Inventory Management", titleFont, Brushes.Black, x, y) : y += lh + 2
                 eArgs.Graphics.DrawString("SALES RECEIPT", headFont, Brushes.Black, x, y) : y += lh + 4
                 eArgs.Graphics.DrawString("Invoice #: " & invoiceID & "   Date: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm"), font, Brushes.Black, x, y) : y += lh
                 eArgs.Graphics.DrawString("Customer: " & customer, font, Brushes.Black, x, y) : y += lh + 4
                 eArgs.Graphics.DrawString("Part Number", headFont, Brushes.Black, x, y)
-                eArgs.Graphics.DrawString("Qty", headFont, Brushes.Black, x + 250, y)
-                eArgs.Graphics.DrawString("Unit", headFont, Brushes.Black, x + 320, y)
-                eArgs.Graphics.DrawString("Line", headFont, Brushes.Black, x + 400, y)
+                eArgs.Graphics.DrawString("Qty", headFont, Brushes.Black, x + 150, y)
+                eArgs.Graphics.DrawString("Unit", headFont, Brushes.Black, x + 180, y)
+                eArgs.Graphics.DrawString("Line", headFont, Brushes.Black, x + 230, y)
                 y += lh + 2
                 eArgs.Graphics.DrawLine(Pens.Black, x, y, x + width, y)
                 y += 6
                 For Each it As ReceiptItemData In items
                     eArgs.Graphics.DrawString(it.PartNumber, font, Brushes.Black, x, y)
-                    eArgs.Graphics.DrawString(it.Quantity.ToString("N0"), font, Brushes.Black, x + 250, y)
-                    eArgs.Graphics.DrawString(it.UnitPrice.ToString("N2"), font, Brushes.Black, x + 320, y)
-                    eArgs.Graphics.DrawString((it.Quantity * it.UnitPrice).ToString("N2"), font, Brushes.Black, x + 400, y)
+                    eArgs.Graphics.DrawString(it.Quantity.ToString("N0"), font, Brushes.Black, x + 150, y)
+                    eArgs.Graphics.DrawString(it.UnitPrice.ToString("N2"), font, Brushes.Black, x + 180, y)
+                    eArgs.Graphics.DrawString((it.Quantity * it.UnitPrice).ToString("N2"), font, Brushes.Black, x + 230, y)
                     y += lh
                 Next
                 y += 4
                 eArgs.Graphics.DrawLine(Pens.Black, x, y, x + width, y)
                 y += 6
                 eArgs.Graphics.DrawString("Subtotal", font, Brushes.Black, x, y)
-                eArgs.Graphics.DrawString(subtotal.ToString("N2"), font, Brushes.Black, x + 400, y)
+                eArgs.Graphics.DrawString(subtotal.ToString("N2"), font, Brushes.Black, x + 230, y)
                 y += lh
                 eArgs.Graphics.DrawString("VAT (15%)", font, Brushes.Black, x, y)
-                eArgs.Graphics.DrawString(vat.ToString("N2"), font, Brushes.Black, x + 400, y)
+                eArgs.Graphics.DrawString(vat.ToString("N2"), font, Brushes.Black, x + 230, y)
                 y += lh
-                eArgs.Graphics.DrawString("Total", New Font("Segoe UI", 10, FontStyle.Bold), Brushes.Black, x, y)
-                eArgs.Graphics.DrawString(total.ToString("N2"), New Font("Segoe UI", 10, FontStyle.Bold), Brushes.Black, x + 400, y)
+                eArgs.Graphics.DrawString("Total", New Font("Consolas", 10, FontStyle.Bold), Brushes.Black, x, y)
+                eArgs.Graphics.DrawString(total.ToString("N2"), New Font("Consolas", 10, FontStyle.Bold), Brushes.Black, x + 230, y)
                 y += lh + 6
-                eArgs.Graphics.DrawString("Thank you for your purchase.", New Font("Segoe UI", 8), Brushes.Black, x, y)
+                eArgs.Graphics.DrawString("Thank you for your purchase.", New Font("Consolas", 8), Brushes.Black, x, y)
 
                 titleFont.Dispose() : headFont.Dispose() : font.Dispose()
                 eArgs.HasMorePages = False
