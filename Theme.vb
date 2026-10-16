@@ -54,8 +54,10 @@ Public Module ModernTheme
                                     ' Open at the screen's top-left corner: some forms were
                                     ' scrolling to their bottom content on open. Pin both the
                                     ' window position and the scroll offset to the origin.
+                                    Application.DoEvents()
                                     form.Location = New Point(0, 0)
                                     form.AutoScrollPosition = New Point(0, 0)
+                                    Application.DoEvents()
                                     If LanguageService.IsAmharic Then LanguageService.ApplyTo(form)
                                 End Sub
 

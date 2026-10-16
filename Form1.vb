@@ -179,16 +179,29 @@ Public Class Dashboard
             .BackColor = Color.Transparent
         }
 
-        Dim buttons As New List(Of Button) From {
-            CreateMenuButton("Add Spare Part", AddressOf btnAddPart_Click),
-            CreateMenuButton("Issue Spare Part", AddressOf btnIssuePart_Click),
-            CreateMenuButton("Inventory List", AddressOf btnInventory_Click),
-            CreateMenuButton("Purchase Batches", AddressOf btnPurchaseBatch_Click),
-            CreateMenuButton("Sold Items", AddressOf btnSoldItem_Click),
-            CreateMenuButton("Stock Card", AddressOf btnStockCard_Click),
-            CreateMenuButton("Suppliers", AddressOf btnSupplier_Click),
-            CreateMenuButton("Customers", AddressOf btnCustomer_Click)
-        }
+        Dim buttons As New List(Of Button)
+
+        ' Accountants see inventory movements (Add/Issue, supplier receipts
+        ' etc.) only for viewing; receiving and issuing stock are not part of
+        ' that role. Hide them for that role instead of showing a dead button.
+        Dim isAccountant As Boolean = SecurityContext.HasRole("Accountant")
+        Dim canReceive As Boolean =
+            SecurityContext.HasPermission("INVENTORY_RECEIVE") AndAlso Not isAccountant
+        Dim canIssue As Boolean =
+            SecurityContext.HasPermission("INVENTORY_ISSUE") AndAlso Not isAccountant
+
+        If canReceive Then
+            buttons.Add(CreateMenuButton("Add Spare Part", AddressOf btnAddPart_Click))
+        End If
+        If canIssue Then
+            buttons.Add(CreateMenuButton("Issue Spare Part", AddressOf btnIssuePart_Click))
+        End If
+        buttons.Add(CreateMenuButton("Inventory List", AddressOf btnInventory_Click))
+        buttons.Add(CreateMenuButton("Purchase Batches", AddressOf btnPurchaseBatch_Click))
+        buttons.Add(CreateMenuButton("Sold Items", AddressOf btnSoldItem_Click))
+        buttons.Add(CreateMenuButton("Stock Card", AddressOf btnStockCard_Click))
+        buttons.Add(CreateMenuButton("Suppliers", AddressOf btnSupplier_Click))
+        buttons.Add(CreateMenuButton("Customers", AddressOf btnCustomer_Click))
 
         For Each btn As Button In buttons
             btn.Width = 160
