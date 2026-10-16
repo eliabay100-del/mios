@@ -11,6 +11,7 @@ Public Class Dashboard
     Private pnlAdminActions As FlowLayoutPanel
     Private lblTitle As Label
     Private btnLanguage As Button
+    Private ReadOnly statValueLabels As New List(Of Label)()
 
     Public Sub New()
         InitializeComponent()
@@ -230,6 +231,9 @@ Public Class Dashboard
         }
         pnlQuickActions.Controls.Add(pnlAdminActions)
         AddHandler Me.Resize, Sub() CenterDashboardContent()
+        ' Refresh the stat cards whenever the dashboard is re-activated (for
+        ' example after receiving or issuing stock), so they never go stale.
+        AddHandler Me.Activated, Sub(sender, e) RefreshStats()
 
         AddDashboardAction("Record Payment", 0, 0, SecurityContext.HasPermission("PAYMENT_MANAGE"), Sub()
             OpenDialog(Function() New PaymentForm())
@@ -315,8 +319,9 @@ Public Class Dashboard
         Public SalesToday As Decimal
     End Structure
 
-    Private Function GetDashboardStats() As DashboardStats
+    Private Function GetDashboardStats(Optional suppressError As Boolean = False) As DashboardStats
         Dim stats As New DashboardStats()
+        Me.Cursor = Cursors.WaitCursor
         Try
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
@@ -327,10 +332,24 @@ Public Class Dashboard
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load dashboard statistics", ex)
-            MessageBox.Show("Unable to load dashboard statistics: " & ex.Message, "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            If Not suppressError Then
+                MessageBox.Show("Unable to load dashboard statistics: " & ex.Message, "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End If
+        Finally
+            Me.Cursor = Cursors.Default
         End Try
         Return stats
     End Function
+
+    ''' <summary>Updates the four stat cards without rebuilding the dashboard.</summary>
+    Private Sub RefreshStats()
+        If statValueLabels.Count <> 4 Then Return
+        Dim stats As DashboardStats = GetDashboardStats(suppressError:=True)
+        statValueLabels(0).Text = stats.StockOnHand.ToString("N0")
+        statValueLabels(1).Text = stats.PurchaseBatches.ToString("N0")
+        statValueLabels(2).Text = stats.LowInventory.ToString("N0")
+        statValueLabels(3).Text = stats.SalesToday.ToString("N2")
+    End Sub
 
     Private Function ExecuteScalar(conn As SqlConnection, query As String) As Object
         Using cmd As New SqlCommand(query, conn)
@@ -388,6 +407,7 @@ Public Class Dashboard
             .AutoSize = True,
             .Margin = New Padding(0, 2, 0, 0)
         }
+        statValueLabels.Add(lblValue)
 
         Dim lblNote As New Label With {
             .Text = note,

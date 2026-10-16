@@ -54,13 +54,22 @@ Public Class UserManagementForm
         AddHandler btnCreate.Click, AddressOf CreateUser_Click
         Me.Controls.Add(btnCreate)
 
-        Me.Controls.Add(New Label With {.Text = "Select a user in the list, then choose Reset password.", .Location = New Point(24, 510), .Size = New Size(370, 24), .ForeColor = ModernTheme.MutedText})
+        Me.Controls.Add(New Label With {.Text = "Select a user in the list, then choose Reset password.", .Location = New Point(24, 552), .Size = New Size(560, 24), .ForeColor = ModernTheme.MutedText})
 
         Dim btnReset As Button = ModernTheme.MakeSecondaryButton("Reset password")
         btnReset.Location = New Point(400, 500)
         btnReset.Width = 150
         AddHandler btnReset.Click, AddressOf ResetPassword_Click
         Me.Controls.Add(btnReset)
+
+        Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Close")
+        btnClose.Location = New Point(24, 500)
+        btnClose.Width = 130
+        AddHandler btnClose.Click, Sub() Me.Close()
+        Me.Controls.Add(btnClose)
+
+        Me.AcceptButton = btnCreate
+        Me.CancelButton = btnClose
 
         LoadUsers()
         LoadRoles()
@@ -74,33 +83,55 @@ Public Class UserManagementForm
     End Sub
 
     Private Sub LoadRoles()
-        Using conn As New SqlConnection(DBModule.ConnString)
-            conn.Open()
-            Using cmd As New SqlCommand("SELECT RoleName FROM mn.Role ORDER BY RoleName", conn)
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        cmbRole.Items.Add(reader.GetString(0))
-                    End While
+        Try
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Using cmd As New SqlCommand("SELECT RoleName FROM mn.Role ORDER BY RoleName", conn)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            cmbRole.Items.Add(reader.GetString(0))
+                        End While
+                    End Using
                 End Using
             End Using
-        End Using
-        If cmbRole.Items.Count > 0 Then cmbRole.SelectedItem = "Storekeeper"
+        Catch ex As Exception
+            AppLogger.Error("Failed to load roles", ex)
+            MessageBox.Show("Unable to load roles: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+        If cmbRole.Items.Count > 0 Then
+            ' Default to the least-privileged common role rather than whatever
+            ' happens to sort first, so a new account is not silently created
+            ' with more access than intended.
+            For Each preferred As String In New String() {"Storekeeper", "Clerk"}
+                If cmbRole.Items.Contains(preferred) Then
+                    cmbRole.SelectedItem = preferred
+                    Return
+                End If
+            Next
+            cmbRole.SelectedIndex = 0
+        End If
     End Sub
 
     Private Sub LoadUsers()
         users.Clear()
         grid.Rows.Clear()
-        Using conn As New SqlConnection(DBModule.ConnString)
-            conn.Open()
-            Const query As String = "SELECT u.UserID, u.Username, ISNULL(r.RoleName, 'Unassigned') FROM mn.UUser u LEFT JOIN mn.UserRole ur ON ur.UserID = u.UserID LEFT JOIN mn.Role r ON r.RoleID = ur.RoleID ORDER BY u.Username"
-            Using cmd As New SqlCommand(query, conn)
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        users.Add(New UserRow With {.UserID = reader.GetInt32(0), .Username = reader.GetString(1), .RoleName = reader.GetString(2)})
-                    End While
+        Try
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Const query As String = "SELECT u.UserID, u.Username, ISNULL(r.RoleName, 'Unassigned') FROM mn.UUser u LEFT JOIN mn.UserRole ur ON ur.UserID = u.UserID LEFT JOIN mn.Role r ON r.RoleID = ur.RoleID ORDER BY u.Username"
+                Using cmd As New SqlCommand(query, conn)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            users.Add(New UserRow With {.UserID = reader.GetInt32(0), .Username = reader.GetString(1), .RoleName = reader.GetString(2)})
+                        End While
+                    End Using
                 End Using
             End Using
-        End Using
+        Catch ex As Exception
+            AppLogger.Error("Failed to load users", ex)
+            MessageBox.Show("Unable to load users: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End Try
         For Each user In users
             grid.Rows.Add(user.UserID, user.Username, user.RoleName)
         Next
@@ -141,7 +172,7 @@ Public Class UserManagementForm
 
     Private Sub ResetPassword_Click(sender As Object, e As EventArgs)
         If grid.SelectedRows.Count = 0 Then
-            MessageBox.Show("Select a user in the list first.", "Reset password", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            MessageBox.Show("Select a user in the list first.", "Reset password", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 

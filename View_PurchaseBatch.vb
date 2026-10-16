@@ -174,7 +174,7 @@ Public Class View_PurchaseBatch
                 If Not String.IsNullOrEmpty(partFilter) Then
                     query &= " WHERE pb.PartNumber LIKE @p"
                 End If
-                query &= " ORDER BY pb.PurchaseDate DESC"
+                query &= " ORDER BY pb.PurchaseDate DESC, pb.BatchID DESC"
 
                 Using cmd As New SqlCommand(query, conn)
                     If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", "%" & partFilter & "%")
@@ -195,7 +195,7 @@ Public Class View_PurchaseBatch
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load purchase batches", ex)
-            MessageBox.Show("DB Error: " & ex.Message)
+            MessageBox.Show("Unable to load purchase batches: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
         Return list.ToArray()
     End Function
@@ -256,17 +256,31 @@ Public Class View_PurchaseBatch
             sfd.FileName = "PurchaseBatches_" & DateTime.Now.ToString("yyyyMMdd") & ".csv"
 
             If sfd.ShowDialog() = DialogResult.OK Then
-                Dim sb As New StringBuilder()
-                sb.AppendLine("BatchID,PartNumber,Supplier,Purchased,Remaining,UnitCost,Date")
+                Try
+                    Dim sb As New StringBuilder()
+                    sb.AppendLine("BatchID,PartNumber,Supplier,Purchased,Remaining,UnitCost,Date")
 
-                For Each b In filteredArray
-                    sb.AppendLine(String.Format("{0},{1},{2},{3},{4},{5},{6}",
-                        b.BatchID, b.PartNumber, b.SupplierName, b.QuantityPurchased, b.QuantityRemaining, b.UnitCost, b.DatePurchased.ToString("yyyy-MM-dd")))
-                Next
+                    For Each b In filteredArray
+                        sb.AppendLine(String.Join(",", {CsvField(b.BatchID), CsvField(b.PartNumber), CsvField(b.SupplierName),
+                            CsvField(b.QuantityPurchased), CsvField(b.QuantityRemaining), CsvField(b.UnitCost), CsvField(b.DatePurchased.ToString("yyyy-MM-dd"))}))
+                    Next
 
-                File.WriteAllText(sfd.FileName, sb.ToString())
-                MessageBox.Show("Export Successful!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    File.WriteAllText(sfd.FileName, sb.ToString())
+                    MessageBox.Show("Export Successful!", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Catch ex As Exception
+                    AppLogger.Error("Failed to export purchase batches", ex)
+                    MessageBox.Show("Export failed: " & ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
             End If
         End Using
     End Sub
+
+    ''' <summary>Quotes a CSV field when it contains a comma, quote or newline.</summary>
+    Private Shared Function CsvField(value As Object) As String
+        Dim text As String = If(value Is Nothing, "", value.ToString())
+        If text.Contains(","c) OrElse text.Contains(""""c) OrElse text.Contains(vbCr) OrElse text.Contains(vbLf) Then
+            Return """" & text.Replace("""", """""") & """"
+        End If
+        Return text
+    End Function
 End Class

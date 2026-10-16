@@ -53,6 +53,12 @@ Public Class ChangePasswordForm
         txtCurrentUsername = ModernTheme.MakeTextBox()
         txtCurrentUsername.Location = New Point(180, 20)
         txtCurrentUsername.Width = 220
+        ' "Change my password" from the dashboard: the account is known, so don't
+        ' make the user retype (and risk mistyping) their own username.
+        If Not String.IsNullOrEmpty(SecurityContext.CurrentUsername) Then
+            txtCurrentUsername.Text = SecurityContext.CurrentUsername
+            txtCurrentUsername.ReadOnly = True
+        End If
         panel.Controls.Add(txtCurrentUsername)
 
         Dim lblCurrentPass As New Label With {
@@ -121,6 +127,9 @@ Public Class ChangePasswordForm
         btnCancel.ForeColor = ModernTheme.Danger
         AddHandler btnCancel.Click, AddressOf btnCancel_Click
         panel.Controls.Add(btnCancel)
+
+        Me.AcceptButton = btnSave
+        Me.CancelButton = btnCancel
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs)

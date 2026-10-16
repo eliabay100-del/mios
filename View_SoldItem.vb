@@ -79,6 +79,7 @@ Public Class View_SoldItem
         txtPartNumber = ModernTheme.MakeTextBox()
         txtPartNumber.Location = New Point(120, 8)
         txtPartNumber.Width = 300
+        AddHandler txtPartNumber.KeyPress, AddressOf SearchField_KeyPress
         pnlFilter.Controls.Add(txtPartNumber)
 
         btnSearch = ModernTheme.MakePrimaryButton("Search")
@@ -114,6 +115,7 @@ Public Class View_SoldItem
         txtPhoneNumber = ModernTheme.MakeTextBox()
         txtPhoneNumber.Location = New Point(80, 8)
         txtPhoneNumber.Width = 260
+        AddHandler txtPhoneNumber.KeyPress, AddressOf SearchField_KeyPress
         pnlFilter2.Controls.Add(txtPhoneNumber)
 
         Dim lblDate As New Label With {
@@ -218,18 +220,20 @@ Public Class View_SoldItem
         Try
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-                Dim query As String = "SELECT ii.IssueDate, ii.PartNumber, ii.QuantityIssued, sp.UnitPrice, " &
-                                     "c.CustomerName, c.Phone FROM mn.IssuedItem ii " &
-                                     "JOIN mn.SpareParts sp ON ii.PartNumber = sp.PartNumber " &
-                                     "JOIN mn.Customer c ON ii.CustomerID = c.CustomerID"
+                ' Report from the sales invoice lines so the price shown is the one
+                ' charged at the time of sale, not the part's current price.
+                Dim query As String = "SELECT si.InvoiceDate, sil.PartNumber, sil.Quantity, sil.UnitPrice, " &
+                                     "c.CustomerName, c.Phone FROM mn.SalesInvoiceLine sil " &
+                                     "JOIN mn.SalesInvoice si ON si.InvoiceID = sil.InvoiceID " &
+                                     "JOIN mn.Customer c ON c.CustomerID = si.CustomerID"
 
                 Dim whereClauses As New List(Of String)
-                If Not String.IsNullOrEmpty(partFilter) Then whereClauses.Add("ii.PartNumber LIKE @p")
+                If Not String.IsNullOrEmpty(partFilter) Then whereClauses.Add("sil.PartNumber LIKE @p")
                 If Not String.IsNullOrEmpty(phoneFilter) Then whereClauses.Add("c.Phone LIKE @phone")
-                If dateFilter.HasValue Then whereClauses.Add("CAST(ii.IssueDate AS DATE) = @date")
+                If dateFilter.HasValue Then whereClauses.Add("CAST(si.InvoiceDate AS DATE) = @date")
 
                 If whereClauses.Count > 0 Then query &= " WHERE " & String.Join(" AND ", whereClauses.ToArray())
-                query &= " ORDER BY ii.IssueDate DESC"
+                query &= " ORDER BY si.InvoiceDate DESC, sil.InvoiceLineID DESC"
 
                 Using cmd As New SqlCommand(query, conn)
                     If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", "%" & partFilter & "%")
@@ -239,9 +243,9 @@ Public Class View_SoldItem
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
                             list.Add(New SoldItem With {
-                                .IssueDate = CDate(reader("IssueDate")),
+                                .IssueDate = CDate(reader("InvoiceDate")),
                                 .PartNumber = reader("PartNumber").ToString(),
-                                .QuantityIssued = CInt(reader("QuantityIssued")),
+                                .QuantityIssued = CInt(reader("Quantity")),
                                 .SellingPrice = CDec(reader("UnitPrice")),
                                 .CustomerName = reader("CustomerName").ToString(),
                                 .PhoneNumber = If(reader("Phone") Is DBNull.Value, "N/A", reader("Phone").ToString()),
@@ -253,7 +257,7 @@ Public Class View_SoldItem
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load sold items", ex)
-            MessageBox.Show("Error: " & ex.Message)
+            MessageBox.Show("Unable to load sold items: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
         Return list.ToArray()
     End Function
@@ -287,6 +291,13 @@ Public Class View_SoldItem
         LoadSoldItems()
     End Sub
 
+    Private Sub SearchField_KeyPress(sender As Object, e As KeyPressEventArgs)
+        If e.KeyChar = ChrW(Keys.Enter) Then
+            LoadSoldItems()
+            e.Handled = True
+        End If
+    End Sub
+
     Private Sub btnClear_Click(sender As Object, e As EventArgs)
         txtPartNumber.Clear()
         txtPhoneNumber.Clear()
@@ -300,14 +311,29 @@ Public Class View_SoldItem
             sfd.Filter = "CSV Files (*.csv)|*.csv"
             sfd.FileName = "SalesReport_" & DateTime.Now.ToString("yyyyMMdd") & ".csv"
             If sfd.ShowDialog() = DialogResult.OK Then
-                Dim sb As New StringBuilder()
-                sb.AppendLine("Date,PartNumber,Quantity,Price,Customer,Phone")
-                For Each i In filteredArray
-                    sb.AppendLine(String.Format("{0},{1},{2},{3},{4},{5}", i.IssueDate.ToString("yyyy-MM-dd HH:mm"), i.PartNumber, i.QuantityIssued, i.SellingPrice, i.CustomerName, i.PhoneNumber))
-                Next
-                File.WriteAllText(sfd.FileName, sb.ToString())
-                MessageBox.Show("Export Successful!")
+                Try
+                    Dim sb As New StringBuilder()
+                    sb.AppendLine("Date,PartNumber,Quantity,Price,Customer,Phone")
+                    For Each i In filteredArray
+                        sb.AppendLine(String.Join(",", {CsvField(i.IssueDate.ToString("yyyy-MM-dd HH:mm")), CsvField(i.PartNumber),
+                            CsvField(i.QuantityIssued), CsvField(i.SellingPrice), CsvField(i.CustomerName), CsvField(i.PhoneNumber)}))
+                    Next
+                    File.WriteAllText(sfd.FileName, sb.ToString())
+                    MessageBox.Show("Export Successful!", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Catch ex As Exception
+                    AppLogger.Error("Failed to export sold items", ex)
+                    MessageBox.Show("Export failed: " & ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
             End If
         End Using
     End Sub
+
+    ''' <summary>Quotes a CSV field when it contains a comma, quote or newline.</summary>
+    Private Shared Function CsvField(value As Object) As String
+        Dim text As String = If(value Is Nothing, "", value.ToString())
+        If text.Contains(","c) OrElse text.Contains(""""c) OrElse text.Contains(vbCr) OrElse text.Contains(vbLf) Then
+            Return """" & text.Replace("""", """""") & """"
+        End If
+        Return text
+    End Function
 End Class

@@ -142,7 +142,7 @@ Public Class Customer
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load customers", ex)
-            MessageBox.Show("DB Error: " & ex.Message)
+            MessageBox.Show("Unable to load customers: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
         Return customersList.ToArray()
     End Function
@@ -202,12 +202,12 @@ Public Class Customer
             Using sfd As New SaveFileDialog() With {.Filter = "CSV|*.csv", .FileName = "Customer_List.csv"}
                 If sfd.ShowDialog() = DialogResult.OK Then
                     IO.File.WriteAllText(sfd.FileName, sb.ToString())
-                    MessageBox.Show("Export Successful!")
+                    MessageBox.Show("Export Successful!", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 End If
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to export customers", ex)
-            MessageBox.Show("Export Error: " & ex.Message)
+            MessageBox.Show("Export failed: " & ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class

@@ -20,20 +20,25 @@ Public Module AccountingService
     End Sub
 
     Public Sub PostJournalEntry(conn As SqlConnection, transaction As SqlTransaction, referenceType As String, referenceID As Integer, description As String, lines As IEnumerable(Of JournalLineData))
-        Dim journalLines As List(Of JournalLineData) = lines.ToList()
+        ' Drop lines that are zero on both sides. The schema forbids 0/0 lines
+        ' (CK_JournalLine_OneSide) and they carry no information, so a zero-cost
+        ' sale or similar must not abort the whole transaction.
+        Dim journalLines As List(Of JournalLineData) = lines.Where(Function(line) line.Debit <> 0D OrElse line.Credit <> 0D).ToList()
         Dim debitTotal As Decimal = journalLines.Sum(Function(line) line.Debit)
         Dim creditTotal As Decimal = journalLines.Sum(Function(line) line.Credit)
 
+        If journalLines.Count = 0 Then Return
         If debitTotal <> creditTotal Then
             Throw New InvalidOperationException("Accounting entry is not balanced.")
         End If
 
         Dim entryID As Integer
-        Const entrySql As String = "INSERT INTO mn.JournalEntry (ReferenceType, ReferenceID, Description) OUTPUT INSERTED.JournalEntryID VALUES (@type, @referenceID, @description)"
+        Const entrySql As String = "INSERT INTO mn.JournalEntry (ReferenceType, ReferenceID, Description, CreatedByUserID) OUTPUT INSERTED.JournalEntryID VALUES (@type, @referenceID, @description, @userID)"
         Using cmd As New SqlCommand(entrySql, conn, transaction)
             cmd.Parameters.AddWithValue("@type", referenceType)
             cmd.Parameters.AddWithValue("@referenceID", referenceID)
             cmd.Parameters.AddWithValue("@description", description)
+            cmd.Parameters.AddWithValue("@userID", If(SecurityContext.CurrentUserID = 0, DBNull.Value, CObj(SecurityContext.CurrentUserID)))
             entryID = Convert.ToInt32(cmd.ExecuteScalar())
         End Using
 

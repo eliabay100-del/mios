@@ -96,7 +96,7 @@ Public Class View_StockCard
             .Location = New Point(22, 130),
             .Size = New Size(1010, 25),
             .Font = New Font("Segoe UI", 9, FontStyle.Italic),
-            .ForeColor = Color.Red,
+            .ForeColor = ModernTheme.Danger,
             .Visible = False
         }
         Me.Controls.Add(lblError)
@@ -163,11 +163,11 @@ Public Class View_StockCard
 
         ' Validation
         If Not String.IsNullOrEmpty(partNumber) AndAlso Not PartNumberExists(partNumber) Then
-            lblError.Text = "Part Number '" & partNumber & "' not found in Master List."
+            lblError.Text = "Part number '" & partNumber & "' was not found."
             lblError.Visible = True
             dgvStockCard.Visible = False
             btnExport.Visible = False
-            btnClose.Visible = False
+            ' Keep the Close button visible so the user can always leave.
             Return
         End If
 
@@ -178,13 +178,11 @@ Public Class View_StockCard
             DisplayStockMovements(filteredArray)
             dgvStockCard.Visible = True
             btnExport.Visible = True
-            btnClose.Visible = True
         Else
             lblError.Text = "No transaction records found."
             lblError.Visible = True
             dgvStockCard.Visible = False
             btnExport.Visible = False
-            btnClose.Visible = False
         End If
     End Sub
 
@@ -199,7 +197,7 @@ Public Class View_StockCard
                     "ReferenceType, Remarks FROM mn.StockCard"
 
                 If Not String.IsNullOrEmpty(partFilter) Then query &= " WHERE PartNumber = @p"
-                query &= " ORDER BY MovementDate ASC"
+                query &= " ORDER BY MovementDate ASC, StockCardID ASC"
 
                 Using cmd As New SqlCommand(query, conn)
                     If Not String.IsNullOrEmpty(partFilter) Then cmd.Parameters.AddWithValue("@p", partFilter)
@@ -221,7 +219,7 @@ Public Class View_StockCard
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load stock movements", ex)
-            MessageBox.Show("Database Connection Error: " & ex.Message)
+            MessageBox.Show("Unable to load the stock card: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
         Return list.ToArray()
     End Function
@@ -254,8 +252,11 @@ Public Class View_StockCard
                     Return count > 0
                 End Using
             End Using
-        Catch
-            Return False
+        Catch ex As Exception
+            AppLogger.Error("Failed to check part number existence", ex)
+            ' Report the part as present so the caller proceeds and surfaces the
+            ' real database error instead of a misleading "not found" message.
+            Return True
         End Try
     End Function
 
@@ -299,17 +300,31 @@ Public Class View_StockCard
             sfd.FileName = "StockCard_" & DateTime.Now.ToString("yyyyMMdd_HHmm") & ".csv"
 
             If sfd.ShowDialog() = DialogResult.OK Then
-                Dim sb As New StringBuilder()
-                sb.AppendLine("Date,PartNumber,In,Out,Balance,Reference,Remarks")
+                Try
+                    Dim sb As New StringBuilder()
+                    sb.AppendLine("Date,PartNumber,In,Out,Balance,Reference,Remarks")
 
-                For Each m In filteredArray
-                    sb.AppendLine(String.Format("{0},{1},{2},{3},{4},{5},{6}",
-                        m.MovementDate.ToString("yyyy-MM-dd"), m.PartNumber, m.InQty, m.OutQty, m.Balance, m.Reference, m.Remarks))
-                Next
+                    For Each m In filteredArray
+                        sb.AppendLine(String.Join(",", {CsvField(m.MovementDate.ToString("yyyy-MM-dd")), CsvField(m.PartNumber),
+                            CsvField(m.InQty), CsvField(m.OutQty), CsvField(m.Balance), CsvField(m.Reference), CsvField(m.Remarks)}))
+                    Next
 
-                File.WriteAllText(sfd.FileName, sb.ToString())
-                MessageBox.Show("Data exported successfully!", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    File.WriteAllText(sfd.FileName, sb.ToString())
+                    MessageBox.Show("Data exported successfully!", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Catch ex As Exception
+                    AppLogger.Error("Failed to export stock card", ex)
+                    MessageBox.Show("Export failed: " & ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
             End If
         End Using
     End Sub
+
+    ''' <summary>Quotes a CSV field when it contains a comma, quote or newline.</summary>
+    Private Shared Function CsvField(value As Object) As String
+        Dim text As String = If(value Is Nothing, "", value.ToString())
+        If text.Contains(","c) OrElse text.Contains(""""c) OrElse text.Contains(vbCr) OrElse text.Contains(vbLf) Then
+            Return """" & text.Replace("""", """""") & """"
+        End If
+        Return text
+    End Function
 End Class

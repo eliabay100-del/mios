@@ -175,7 +175,7 @@ Public Class View_Inventory
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load inventory", ex)
-            MessageBox.Show(ex.Message)
+            MessageBox.Show("Unable to load inventory: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
         Return itemsList.ToArray()
     End Function
@@ -237,7 +237,9 @@ Public Class View_Inventory
                     End Using
                 End Using
             End Using
-        Catch : End Try
+        Catch ex As Exception
+            AppLogger.Error("Failed to load categories", ex)
+        End Try
     End Sub
 
     Private Sub dgvInventory_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)

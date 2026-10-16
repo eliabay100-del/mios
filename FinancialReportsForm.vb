@@ -30,15 +30,18 @@ Public Class FinancialReportsForm
         dgvReport.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
         dgvReport.SelectionMode = DataGridViewSelectionMode.FullRowSelect
         dgvReport.RowHeadersVisible = False
-        dgvReport.BackgroundColor = Color.White
-        dgvReport.BorderStyle = BorderStyle.FixedSingle
         dgvReport.ColumnHeadersVisible = False
-        dgvReport.RowTemplate.Height = 28
+        ' Use the shared grid look so this report matches every other table.
+        ModernTheme.StyleGrid(dgvReport)
 
         Dim colLabel As New DataGridViewTextBoxColumn()
         colLabel.Name = "Label"
         colLabel.HeaderText = "Label"
         colLabel.Width = 320
+        ' Fill the grid so the report columns use the whole width at any DPI,
+        ' instead of leaving a blank strip on the right.
+        colLabel.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+        colLabel.FillWeight = 62.0F
         colLabel.DefaultCellStyle.Font = New Font("Segoe UI", 10)
         dgvReport.Columns.Add(colLabel)
 
@@ -46,6 +49,8 @@ Public Class FinancialReportsForm
         colAmount.Name = "Amount"
         colAmount.HeaderText = "Amount"
         colAmount.Width = 180
+        colAmount.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+        colAmount.FillWeight = 38.0F
         colAmount.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
         colAmount.DefaultCellStyle.Font = New Font("Consolas", 10)
         colAmount.DefaultCellStyle.Format = "N2"
@@ -70,11 +75,20 @@ Public Class FinancialReportsForm
         AddHandler btnExport.Click, Sub() ExportCSV()
         Me.Controls.Add(btnExport)
 
+        Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Close")
+        btnClose.Location = New Point(260, 530)
+        btnClose.Width = 130
+        AddHandler btnClose.Click, Sub() Me.Close()
+        Me.Controls.Add(btnClose)
+
+        Me.CancelButton = btnClose
+
         LoadReport()
     End Sub
 
     Private Sub LoadReport()
         dgvReport.Rows.Clear()
+        Me.Cursor = Cursors.WaitCursor
         Try
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
@@ -106,6 +120,8 @@ Public Class FinancialReportsForm
         Catch ex As Exception
             AppLogger.Error("Failed to load financial reports", ex)
             MessageBox.Show("Unable to load financial report: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Finally
+            Me.Cursor = Cursors.Default
         End Try
     End Sub
 

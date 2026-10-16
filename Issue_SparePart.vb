@@ -577,6 +577,7 @@ Public Class Issue_SparePart
         Dim remarks As String = txtRemarks.Text.Trim()
 
         ' Start transaction (PHP: sqlsrv_begin_transaction)
+        Me.Cursor = Cursors.WaitCursor
         Try
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
@@ -736,14 +737,18 @@ Public Class Issue_SparePart
                         Next
 
                         ' Update main SpareParts quantity (PHP: UPDATE mn.SpareParts)
+                        ' The WHERE guard turns a master/batch divergence into a
+                        ' clear message instead of a raw CHECK-constraint failure.
                         Dim updateMainSql As String = "UPDATE mn.SpareParts " &
                                                      "SET Quantity = Quantity - @qty " &
-                                                     "WHERE PartNumber = @partNum"
+                                                     "WHERE PartNumber = @partNum AND Quantity >= @qty"
 
                         Using cmd As New SqlCommand(updateMainSql, conn, transaction)
                             cmd.Parameters.AddWithValue("@qty", originalQty)
                             cmd.Parameters.AddWithValue("@partNum", item.PartNumber)
-                            cmd.ExecuteNonQuery()
+                            If cmd.ExecuteNonQuery() = 0 Then
+                                Throw New Exception($"Stock for {item.PartNumber} is out of sync between the master quantity and the batch ledger. Run the reconciliation script and try again.")
+                            End If
                         End Using
 
                         ' Get new balance for audit
@@ -805,6 +810,7 @@ Public Class Issue_SparePart
             End Using
 
         Catch ex As Exception
+            Me.Cursor = Cursors.Default
             AppLogger.Error("Failed to issue spare parts", ex)
             MessageBox.Show("Error issuing parts: " & ex.Message, "Database Error",
                           MessageBoxButtons.OK, MessageBoxIcon.Error)

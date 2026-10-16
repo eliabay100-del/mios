@@ -14,7 +14,7 @@ Public Class ExpenseForm
         If Not SecurityContext.HasPermission("EXPENSE_MANAGE") Then Throw New UnauthorizedAccessException("Your role cannot record expenses.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Record expense"
-        Me.Size = New Size(560, 360)
+        Me.Size = New Size(560, 430)
         Me.StartPosition = FormStartPosition.CenterParent
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
@@ -30,10 +30,19 @@ Public Class ExpenseForm
         cmbMethod.SelectedIndex = 0
         LoadAccounts()
         Dim btnSave As Button = ModernTheme.MakePrimaryButton("Save expense")
-        btnSave.Location = New Point(350, 285)
+        btnSave.Location = New Point(345, 320)
         btnSave.Width = 160
         AddHandler btnSave.Click, AddressOf SaveExpense_Click
         Me.Controls.Add(btnSave)
+
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(180, 320)
+        btnCancel.Width = 150
+        AddHandler btnCancel.Click, Sub() Me.Close()
+        Me.Controls.Add(btnCancel)
+
+        Me.AcceptButton = btnSave
+        Me.CancelButton = btnCancel
     End Sub
 
     Private Sub AddField(labelText As String, control As Control, top As Integer)
@@ -44,19 +53,24 @@ Public Class ExpenseForm
     End Sub
 
     Private Sub LoadAccounts()
-        Using conn As New SqlConnection(DBModule.ConnString)
-            conn.Open()
-            ' Cost of Goods Sold (5000) is driven by inventory issues, not manual
-            ' expenses, and the financial report excludes it from operating
-            ' expenses - so keep it out of this picker to avoid double counting.
-            Using cmd As New SqlCommand("SELECT AccountID, AccountCode, AccountName FROM mn.Account WHERE AccountType = 'EXPENSE' AND AccountCode <> '5000' ORDER BY AccountCode", conn)
-                Using reader = cmd.ExecuteReader()
-                    While reader.Read()
-                        cmbAccount.Items.Add(New AccountItem With {.ID = reader.GetInt32(0), .Code = reader.GetString(1), .Name = reader.GetString(2)})
-                    End While
+        Try
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                ' Cost of Goods Sold (5000) is driven by inventory issues, not manual
+                ' expenses, and the financial report excludes it from operating
+                ' expenses - so keep it out of this picker to avoid double counting.
+                Using cmd As New SqlCommand("SELECT AccountID, AccountCode, AccountName FROM mn.Account WHERE AccountType = 'EXPENSE' AND AccountCode <> '5000' ORDER BY AccountCode", conn)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            cmbAccount.Items.Add(New AccountItem With {.ID = reader.GetInt32(0), .Code = reader.GetString(1), .Name = reader.GetString(2)})
+                        End While
+                    End Using
                 End Using
             End Using
-        End Using
+        Catch ex As Exception
+            AppLogger.Error("Failed to load expense accounts", ex)
+            MessageBox.Show("Unable to load expense accounts: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
         If cmbAccount.Items.Count > 0 Then cmbAccount.SelectedIndex = 0
     End Sub
 

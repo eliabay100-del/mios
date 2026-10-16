@@ -35,9 +35,13 @@ Public Module SecurityContext
                     End Using
                 End Using
             End Using
-            permissionsLoaded = True
         Catch ex As Exception
             AppLogger.Error("Failed to load permissions for user " & CurrentUserID, ex)
+        Finally
+            ' Load once per session. If the load failed we still mark it done,
+            ' otherwise every HasPermission call would hammer the database with a
+            ' fresh connection and a fresh log entry (fails closed either way).
+            permissionsLoaded = True
         End Try
     End Sub
 

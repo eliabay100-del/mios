@@ -18,7 +18,7 @@ Public Class PaymentForm
         End If
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Record payment"
-        Me.Size = New Size(560, 430)
+        Me.Size = New Size(560, 480)
         Me.StartPosition = FormStartPosition.CenterParent
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
@@ -49,15 +49,24 @@ Public Class PaymentForm
         txtNotes.Multiline = True
 
         lblError.ForeColor = ModernTheme.Danger
-        lblError.Location = New Point(180, 335)
+        lblError.Location = New Point(180, 340)
         lblError.Size = New Size(330, 28)
         Me.Controls.Add(lblError)
 
         Dim btnSave As Button = ModernTheme.MakePrimaryButton("Save payment")
-        btnSave.Location = New Point(180, 370)
+        btnSave.Location = New Point(345, 375)
         btnSave.Width = 160
         AddHandler btnSave.Click, AddressOf SavePayment_Click
         Me.Controls.Add(btnSave)
+
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(180, 375)
+        btnCancel.Width = 150
+        AddHandler btnCancel.Click, Sub() Me.Close()
+        Me.Controls.Add(btnCancel)
+
+        Me.AcceptButton = btnSave
+        Me.CancelButton = btnCancel
     End Sub
 
     Private Sub AddField(labelText As String, control As Control, top As Integer)
@@ -178,7 +187,7 @@ Public Class PaymentForm
             Me.Close()
         Catch ex As Exception
             AppLogger.Error("Failed to record payment", ex)
-            lblError.Text = ex.Message
+            lblError.Text = "Unable to record the payment. Please check the document and amount."
         End Try
     End Sub
 End Class

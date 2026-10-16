@@ -22,6 +22,15 @@ Public Class BackupForm
         btn.Width = 150
         AddHandler btn.Click, AddressOf CreateBackup_Click
         Me.Controls.Add(btn)
+
+        Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Close")
+        btnClose.Location = New Point(170, 150)
+        btnClose.Width = 130
+        AddHandler btnClose.Click, Sub() Me.Close()
+        Me.Controls.Add(btnClose)
+
+        Me.AcceptButton = btn
+        Me.CancelButton = btnClose
     End Sub
 
     Private Sub CreateBackup_Click(sender As Object, e As EventArgs)
@@ -36,18 +45,30 @@ Public Class BackupForm
                 Return
             End If
 
+            Dim btn As Button = TryCast(sender, Button)
             Try
+                ' A full database backup can take many seconds; show a busy cursor
+                ' and disable the button so the window does not look hung.
+                Me.Cursor = Cursors.WaitCursor
+                If btn IsNot Nothing Then btn.Enabled = False
                 Using conn As New SqlConnection(DBModule.ConnString)
                     conn.Open()
-                    Dim safePath = fullPath.Replace("'", "''")
-                    Using cmd As New SqlCommand("BACKUP DATABASE [Inventory] TO DISK = N'" & safePath & "' WITH INIT, FORMAT", conn)
+                    ' Quote the database name from the server (never user input) and
+                    ' pass the destination as a parameter instead of concatenating it.
+                    Dim dbName As String = "[" & conn.Database.Replace("]", "]]") & "]"
+                    Using cmd As New SqlCommand("BACKUP DATABASE " & dbName & " TO DISK = @path WITH INIT, FORMAT", conn)
+                        cmd.Parameters.AddWithValue("@path", fullPath)
                         cmd.CommandTimeout = 0
                         cmd.ExecuteNonQuery()
                     End Using
                 End Using
+                Me.Cursor = Cursors.Default
+                If btn IsNot Nothing Then btn.Enabled = True
                 AppLogger.Info("Database backup completed to " & fullPath)
                 MessageBox.Show("Backup completed.", "Backup", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Catch ex As Exception
+                Me.Cursor = Cursors.Default
+                If btn IsNot Nothing Then btn.Enabled = True
                 AppLogger.Error("Database backup failed", ex)
                 MessageBox.Show("Backup failed: " & ex.Message, "Backup", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try

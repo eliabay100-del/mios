@@ -266,21 +266,26 @@ SELECT @permColumn = COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
    AND COLUMN_NAME IN ('PermissionName', 'PermissionCode');
 IF @permColumn IS NULL SET @permColumn = N'PermissionName';
 
-/* Clerk: front-counter sales and stock movement. */
-INSERT INTO [mn].[RolePermission] (RoleID, PermissionID)
-SELECT r.RoleID, p.PermissionID
-FROM [mn].[Role] r
-JOIN [mn].[Permission] p ON p.PermissionName IN (N'INVENTORY_RECEIVE', N'INVENTORY_ISSUE', N'SALES_MANAGE', N'RETURN_MANAGE')
-WHERE r.RoleName = N'Clerk'
-  AND NOT EXISTS (SELECT 1 FROM [mn].[RolePermission] rp WHERE rp.RoleID = r.RoleID AND rp.PermissionID = p.PermissionID);
+/* Clerk: front-counter sales and stock movement. The permission column is
+   dynamic (@permColumn), so the statement is built and run as dynamic SQL. */
+DECLARE @sqlClerk NVARCHAR(MAX) =
+    N'INSERT INTO [mn].[RolePermission] (RoleID, PermissionID)
+      SELECT r.RoleID, p.PermissionID
+      FROM [mn].[Role] r
+      JOIN [mn].[Permission] p ON p.' + QUOTENAME(@permColumn) + N' IN (N''INVENTORY_RECEIVE'', N''INVENTORY_ISSUE'', N''SALES_MANAGE'', N''RETURN_MANAGE'')
+      WHERE r.RoleName = N''Clerk''
+        AND NOT EXISTS (SELECT 1 FROM [mn].[RolePermission] rp WHERE rp.RoleID = r.RoleID AND rp.PermissionID = p.PermissionID)';
+EXEC sp_executesql @sqlClerk;
 
 /* Accountant: bookkeeping, expenses, payments and reports. */
-INSERT INTO [mn].[RolePermission] (RoleID, PermissionID)
-SELECT r.RoleID, p.PermissionID
-FROM [mn].[Role] r
-JOIN [mn].[Permission] p ON p.PermissionName IN (N'ACCOUNTING_VIEW', N'REPORT_VIEW', N'EXPENSE_MANAGE', N'PAYMENT_MANAGE')
-WHERE r.RoleName = N'Accountant'
-  AND NOT EXISTS (SELECT 1 FROM [mn].[RolePermission] rp WHERE rp.RoleID = r.RoleID AND rp.PermissionID = p.PermissionID);
+DECLARE @sqlAccountant NVARCHAR(MAX) =
+    N'INSERT INTO [mn].[RolePermission] (RoleID, PermissionID)
+      SELECT r.RoleID, p.PermissionID
+      FROM [mn].[Role] r
+      JOIN [mn].[Permission] p ON p.' + QUOTENAME(@permColumn) + N' IN (N''ACCOUNTING_VIEW'', N''REPORT_VIEW'', N''EXPENSE_MANAGE'', N''PAYMENT_MANAGE'')
+      WHERE r.RoleName = N''Accountant''
+        AND NOT EXISTS (SELECT 1 FROM [mn].[RolePermission] rp WHERE rp.RoleID = r.RoleID AND rp.PermissionID = p.PermissionID)';
+EXEC sp_executesql @sqlAccountant;
 GO
 
 /* ---------------------------------------------------------------------------

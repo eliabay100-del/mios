@@ -16,28 +16,38 @@ Public Class ReturnForm
         If Not SecurityContext.HasPermission("RETURN_MANAGE") Then Throw New UnauthorizedAccessException("Your role cannot process returns.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Process return"
-        Me.Size = New Size(590, 470)
+        Me.Size = New Size(590, 560)
         Me.StartPosition = FormStartPosition.CenterParent
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.Controls.Add(New Label With {.Text = "Process return", .Font = New Font("Segoe UI", 22, FontStyle.Bold), .Location = New Point(28, 22), .AutoSize = True})
-        AddField("Return type", cmbType, 75)
-        AddField("Invoice / receipt ID", txtDocumentID, 120)
-        AddField("Part number", txtPartNumber, 165)
-        AddField("Quantity", txtQuantity, 210)
-        AddField("Unit amount", txtAmount, 255)
-        AddField("Reason", txtReason, 300)
-        txtReason.Height = 55
+        AddField("Return type", cmbType, 78)
+        AddField("Invoice / receipt ID", txtDocumentID, 126)
+        AddField("Part number", txtPartNumber, 174)
+        AddField("Quantity", txtQuantity, 222)
+        AddField("Unit amount", txtAmount, 270)
+        AddField("Reason", txtReason, 318)
+        txtReason.Height = 60
         txtReason.Multiline = True
+        txtReason.AcceptsReturn = True
         cmbType.DropDownStyle = ComboBoxStyle.DropDownList
         cmbType.Items.AddRange(New Object() {"Customer return", "Supplier return"})
         cmbType.SelectedIndex = 0
         Dim btnSave As Button = ModernTheme.MakePrimaryButton("Save return")
-        btnSave.Location = New Point(370, 390)
+        btnSave.Location = New Point(390, 455)
         btnSave.Width = 160
         AddHandler btnSave.Click, AddressOf SaveReturn_Click
         Me.Controls.Add(btnSave)
+
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(230, 455)
+        btnCancel.Width = 150
+        AddHandler btnCancel.Click, Sub() Me.Close()
+        Me.Controls.Add(btnCancel)
+
+        Me.AcceptButton = btnSave
+        Me.CancelButton = btnCancel
     End Sub
 
     Private Sub AddField(labelText As String, control As Control, top As Integer)
@@ -56,6 +66,7 @@ Public Class ReturnForm
             Return
         End If
         Try
+            Me.Cursor = Cursors.WaitCursor
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
                 Using transaction = conn.BeginTransaction()
@@ -67,9 +78,11 @@ Public Class ReturnForm
                     transaction.Commit()
                 End Using
             End Using
+            Me.Cursor = Cursors.Default
             MessageBox.Show("Return processed.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Me.Close()
         Catch ex As Exception
+            Me.Cursor = Cursors.Default
             AppLogger.Error("Failed to process return", ex)
             MessageBox.Show("Unable to process return: " & ex.Message, "Return", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -84,6 +97,16 @@ Public Class ReturnForm
             Dim value = cmd.ExecuteScalar()
             If value Is Nothing Then Throw New Exception("Sales invoice was not found.")
             customerID = Convert.ToInt32(value)
+        End Using
+
+        ' A return must reference units actually sold on this invoice, otherwise
+        ' the form could manufacture stock and reverse revenue never recognised.
+        Using cmd As New SqlCommand("SELECT ISNULL(SUM(Quantity), 0) FROM mn.SalesInvoiceLine WHERE InvoiceID = @invoice AND PartNumber = @part", conn, transaction)
+            cmd.Parameters.AddWithValue("@invoice", invoiceID)
+            cmd.Parameters.AddWithValue("@part", partNumber)
+            Dim soldQty As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+            If soldQty = 0 Then Throw New Exception("Part '" & partNumber & "' was not sold on that invoice.")
+            If quantity > soldQty Then Throw New Exception("Cannot return " & quantity & " of '" & partNumber & "': only " & soldQty & " were sold on that invoice.")
         End Using
 
         ' Cost basis of the returned units, taken from the original sale line when
@@ -144,6 +167,15 @@ Public Class ReturnForm
             Dim value = cmd.ExecuteScalar()
             If value Is Nothing Then Throw New Exception("Purchase receipt was not found.")
             supplierID = Convert.ToInt32(value)
+        End Using
+
+        ' A return must reference units actually received on this receipt.
+        Using cmd As New SqlCommand("SELECT ISNULL(SUM(Quantity), 0) FROM mn.PurchaseReceiptLine WHERE ReceiptID = @receipt AND PartNumber = @part", conn, transaction)
+            cmd.Parameters.AddWithValue("@receipt", receiptID)
+            cmd.Parameters.AddWithValue("@part", partNumber)
+            Dim receivedQty As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+            If receivedQty = 0 Then Throw New Exception("Part '" & partNumber & "' was not received on that receipt.")
+            If quantity > receivedQty Then Throw New Exception("Cannot return " & quantity & " of '" & partNumber & "': only " & receivedQty & " were received on that receipt.")
         End Using
 
         Dim returnID As Integer

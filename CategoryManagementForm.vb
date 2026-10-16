@@ -12,7 +12,7 @@ Public Class CategoryManagementForm
         If Not SecurityContext.HasRole("Admin") Then Throw New UnauthorizedAccessException("Only administrators can manage categories.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Manage categories"
-        Me.Size = New Size(520, 480)
+        Me.Size = New Size(520, 540)
         Me.StartPosition = FormStartPosition.CenterParent
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
@@ -45,7 +45,7 @@ Public Class CategoryManagementForm
 
         lstCategories.Location = New Point(30, 160)
         lstCategories.Size = New Size(455, 230)
-        lstCategories.Font = New Font("Segoe UI", 11)
+        lstCategories.Font = New Font("Segoe UI", 10)
         lstCategories.BackColor = ModernTheme.Surface
         lstCategories.ForeColor = ModernTheme.PrimaryText
         Me.Controls.Add(lstCategories)
@@ -55,6 +55,9 @@ Public Class CategoryManagementForm
         btnClose.Width = 125
         AddHandler btnClose.Click, Sub() Me.Close()
         Me.Controls.Add(btnClose)
+
+        Me.AcceptButton = btnAdd
+        Me.CancelButton = btnClose
 
         LoadCategories()
     End Sub
@@ -91,7 +94,7 @@ Public Class CategoryManagementForm
                 Using cmd As New SqlCommand("INSERT INTO mn.Category (CategoryName) SELECT @name WHERE NOT EXISTS (SELECT 1 FROM mn.Category WHERE LOWER(CategoryName) = LOWER(@name))", conn)
                     cmd.Parameters.AddWithValue("@name", categoryName)
                     If cmd.ExecuteNonQuery() = 0 Then
-                        MessageBox.Show("That category already exists.", "Duplicate category", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        MessageBox.Show("That category already exists.", "Duplicate category", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                         Return
                     End If
                 End Using

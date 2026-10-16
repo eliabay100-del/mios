@@ -159,8 +159,16 @@ Public Class Supplier
         AddHandler btnViewRecords.Click, Sub(s As Object, ev As EventArgs) HandleViewRecords()
         AddHandler btnBackToSuppliers.Click, Sub() ShowSupplierList()
         AddHandler btnExport.Click, Sub(s As Object, ev As EventArgs) ExportToCSV()
+        AddHandler txtSearch.KeyPress, AddressOf txtSearch_KeyPress
         AddHandler dgvSuppliers.CellClick, AddressOf HandleCellClick
         LoadSuppliers("")
+    End Sub
+
+    Private Sub txtSearch_KeyPress(sender As Object, e As KeyPressEventArgs)
+        If e.KeyChar = ChrW(Keys.Enter) Then
+            LoadSuppliers(txtSearch.Text.Trim())
+            e.Handled = True
+        End If
     End Sub
 
     Private Sub LoadSuppliers(searchTerm As String)
@@ -168,7 +176,7 @@ Public Class Supplier
         Try
             Using conn As New SqlConnection(DBModule.ConnString)
                 conn.Open()
-                Dim sql As String = "SELECT * FROM mn.Supplier"
+                Dim sql As String = "SELECT SupplierID, SupplierName, Phone, Address FROM mn.Supplier"
                 If Not String.IsNullOrEmpty(searchTerm) Then
                     sql &= " WHERE SupplierName LIKE @s OR Phone LIKE @s"
                 End If
@@ -198,7 +206,7 @@ Public Class Supplier
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load suppliers", ex)
-            MessageBox.Show("Error loading suppliers: " & ex.Message)
+            MessageBox.Show("Unable to load suppliers: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -267,7 +275,7 @@ Public Class Supplier
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to load supplier purchases", ex)
-            MessageBox.Show("Error loading purchases: " & ex.Message)
+            MessageBox.Show("Unable to load purchases: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -294,7 +302,7 @@ Public Class Supplier
             End Using
         Catch ex As Exception
             AppLogger.Error("Failed to export suppliers", ex)
-            MessageBox.Show("Export failed: " & ex.Message)
+            MessageBox.Show("Export failed: " & ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class

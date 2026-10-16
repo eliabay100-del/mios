@@ -130,6 +130,11 @@ Public Class LoginNew
         End If
 
         Dim usernameInput As String = txtUsername.Text.Trim()
+        Dim passwordValid As Boolean = False
+        Dim authedUserID As Integer = 0
+        Dim authedUsername As String = ""
+        Dim authedRole As String = ""
+        Me.Cursor = Cursors.WaitCursor
         Try
             Using con As New SqlConnection(connectionString)
                 con.Open()
@@ -139,50 +144,53 @@ Public Class LoginNew
                         If reader.Read() Then
                             ' Capture the user id before verification so a legacy
                             ' hash is migrated against the correct row.
-                            Dim authedUserID As Integer = Convert.ToInt32(reader("UserID"))
+                            authedUserID = Convert.ToInt32(reader("UserID"))
+                            authedUsername = reader("Username").ToString()
+                            authedRole = reader("RoleName").ToString()
                             Dim storedHash = reader("PasswordHash").ToString()
 
-                            Dim passwordValid As Boolean = SecurityService.VerifyPassword(txtPassword.Text, storedHash)
+                            passwordValid = SecurityService.VerifyPassword(txtPassword.Text, storedHash)
                             If Not passwordValid AndAlso SecurityService.IsLegacyHash(storedHash) Then
                                 passwordValid = SecurityService.VerifyLegacySha256(txtPassword.Text, storedHash)
                                 If passwordValid Then MigratePasswordHash(authedUserID, txtPassword.Text)
                             End If
-
-                            If passwordValid Then
-                                ' Login success
-                                failedAttempts = 0
-                                lockoutUntil = DateTime.MinValue
-                                LoginSuccessful = True
-                                UserID = authedUserID
-                                Username = reader("Username").ToString()
-                                SecurityContext.CurrentUserID = UserID
-                                SecurityContext.CurrentUsername = Username
-                                SecurityContext.CurrentRole = reader("RoleName").ToString()
-                                SecurityContext.LoadPermissions()
-
-                                ' Open Dashboard
-                                Dim dashboard As New Dashboard()
-                                dashboard.Username = Me.Username
-                                dashboard.UserID = Me.UserID
-                                Me.Hide()
-                                dashboard.ShowDialog()
-                                SecurityContext.Clear()
-                                Me.Close()
-                            Else
-                                RegisterFailedAttempt()
-                                lblError.Text = "Invalid username or password"
-                            End If
-                        Else
-                            RegisterFailedAttempt()
-                            lblError.Text = "Invalid username or password"
                         End If
                     End Using
                 End Using
             End Using
         Catch ex As Exception
+            Me.Cursor = Cursors.Default
             AppLogger.Error("Login failed", ex)
             MessageBox.Show("Unable to sign in. Please check that the database is available and try again.", "Sign in", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
         End Try
+        Me.Cursor = Cursors.Default
+
+        ' The connection is closed by now, so the dashboard is opened without
+        ' keeping a database connection open for the whole working session.
+        If passwordValid Then
+            failedAttempts = 0
+            lockoutUntil = DateTime.MinValue
+            LoginSuccessful = True
+            UserID = authedUserID
+            Username = authedUsername
+            SecurityContext.CurrentUserID = UserID
+            SecurityContext.CurrentUsername = Username
+            SecurityContext.CurrentRole = authedRole
+            SecurityContext.LoadPermissions()
+
+            ' Open Dashboard
+            Dim dashboard As New Dashboard()
+            dashboard.Username = Me.Username
+            dashboard.UserID = Me.UserID
+            Me.Hide()
+            dashboard.ShowDialog()
+            SecurityContext.Clear()
+            Me.Close()
+        Else
+            RegisterFailedAttempt()
+            lblError.Text = "Invalid username or password"
+        End If
     End Sub
 
     Private Sub RegisterFailedAttempt()

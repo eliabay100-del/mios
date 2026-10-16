@@ -52,7 +52,13 @@ Public Module ModernTheme
                                     ScaleForCurrentDpi(form)
                                     StyleContent(form)
                                 End Sub
-        AddHandler LanguageService.LanguageChanged, Sub(sender, e) LanguageService.ApplyTo(form)
+
+        ' The language subscription lives on a module-level event, so it would pin
+        ' every form that was ever opened for the lifetime of the process. Remove
+        ' it as soon as the form closes.
+        Dim languageHandler As EventHandler = Sub(sender, e) LanguageService.ApplyTo(form)
+        AddHandler LanguageService.LanguageChanged, languageHandler
+        AddHandler form.FormClosed, Sub(sender, e) RemoveHandler LanguageService.LanguageChanged, languageHandler
     End Sub
 
     Public Sub EnableVerticalScroll(form As Form, contentHeight As Integer)
@@ -110,11 +116,40 @@ Public Module ModernTheme
             StyleButton(DirectCast(root, Button))
         ElseIf TypeOf root Is Label Then
             StyleLabel(DirectCast(root, Label))
+        ElseIf TypeOf root Is TextBox Then
+            StyleTextBox(DirectCast(root, TextBox))
+        ElseIf TypeOf root Is ComboBox Then
+            StyleComboBox(DirectCast(root, ComboBox))
         End If
 
         For Each child As Control In root.Controls
             StyleContent(child)
         Next
+    End Sub
+
+    ''' <summary>
+    ''' Brings a plain, hand-built TextBox in line with the themed inputs so it
+    ''' does not render in the old Microsoft Sans Serif default.
+    ''' </summary>
+    Private Sub StyleTextBox(textBox As TextBox)
+        textBox.BackColor = Color.White
+        textBox.ForeColor = PrimaryText
+        If Not textBox.Multiline Then textBox.BorderStyle = BorderStyle.FixedSingle
+        If textBox.Font Is Nothing OrElse textBox.Font.FontFamily.Name = "Microsoft Sans Serif" Then
+            textBox.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular)
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Applies the shared input font/colours to a plain, hand-built ComboBox.
+    ''' </summary>
+    Private Sub StyleComboBox(combo As ComboBox)
+        combo.BackColor = Color.White
+        combo.ForeColor = PrimaryText
+        combo.FlatStyle = FlatStyle.Flat
+        If combo.Font Is Nothing OrElse combo.Font.FontFamily.Name = "Microsoft Sans Serif" Then
+            combo.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular)
+        End If
     End Sub
 
     Private Sub StyleButton(button As Button)
@@ -232,7 +267,15 @@ Public Module ModernTheme
                 scaledControls.Add(child, Nothing)
 
                 child.Location = ScalePoint(child.Location, scale)
-                If Not child.AutoSize Then child.Size = ScaleSize(child.Size, scale)
+                If child.AutoSize Then
+                    ' Auto-sized controls (single-line TextBox, ...) drive their own
+                    ' height, but a width that was set explicitly must still be
+                    ' scaled - otherwise a 96-DPI field stays narrow next to a
+                    ' scaled ComboBox and the form's fields no longer line up.
+                    child.Width = CInt(Math.Round(child.Width * scale))
+                Else
+                    child.Size = ScaleSize(child.Size, scale)
+                End If
                 child.Padding = ScalePadding(child.Padding, scale)
                 child.Margin = ScalePadding(child.Margin, scale)
 
@@ -248,6 +291,19 @@ Public Module ModernTheme
                     Next
                     For Each row As RowStyle In table.RowStyles
                         If row.SizeType = SizeType.Absolute Then row.Height *= scale
+                    Next
+                End If
+
+                Dim grid As DataGridView = TryCast(child, DataGridView)
+                If grid IsNot Nothing Then
+                    ' The report grids are deliberately rigid: their column widths
+                    ' are fixed pixels rather than fill weights. Those widths must
+                    ' still be scaled, otherwise the columns stop well short of the
+                    ' grid's right edge on a high-DPI display.
+                    For Each column As DataGridViewColumn In grid.Columns
+                        If column.InheritedAutoSizeMode = DataGridViewAutoSizeColumnMode.None Then
+                            column.Width = CInt(Math.Round(column.Width * scale))
+                        End If
                     Next
                 End If
             End If
