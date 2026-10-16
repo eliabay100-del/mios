@@ -10,10 +10,10 @@ Public Module LanguageService
         {"Inventory List", "የእቃ ዝርዝር"}, {"Purchase Batches", "የግዢ ዝርዝር"},
         {"Sold Items", "የተሸጡ እቃዎች"}, {"Stock Card", "የእቃ እንቅስቃሴ"},
         {"Suppliers", "አቅራቢዎች"}, {"Supplier Management", "አቅራቢዎች"}, {"Customers", "ደንበኞች"}, {"Customer Management", "ደንበኞች"}, {"Record Payment", "ክፍያ መዝግብ"},
-        {"Users & Roles", "ተጠቃሚዎች እና ሚናዎች"}, {"Users and roles", "ተጠቃሚዎች እና ሚናዎች"}, {"Manage Categories", "ምድቦችን አስተዳድር"}, {"Manage categories", "ምድቦችን አስተዳድር"},
+        {"Users & Roles", "ተጠቃሚዎች እና ሚናዎች"}, {"Users and roles", "ተጠቃሚዎች እና ሚናዎች"}, {"Manage Categories", "ምድቦችን አስተዳድር"},
         {"Adjust Stock", "የእቃ ማስተካከያ"}, {"Inventory adjustment", "የእቃ ማስተካከያ"}, {"Financial Reports", "የፋይናንስ ሪፖርቶች"},
         {"Record Expense", "ወጪ መዝግብ"}, {"Process Return", "መመለሻ አስኬድ"},
-        {"Database Backup", "የዳታቤዝ ባክአፕ"}, {"Database backup", "የዳታቤዝ ባክአፕ"}, {"Exit", "ውጣ"}, {"Stock on hand", "በእጅ ያለ እቃ"},
+        {"Database Backup", "የዳታቤዝ ባክአፕ"}, {"Exit", "ውጣ"}, {"Stock on hand", "በእጅ ያለ እቃ"},
         {"Low inventory", "ዝቅተኛ እቃ"}, {"Sales today", "የዛሬ ሽያጭ"},
         {"Current quantity", "አሁን ያለ መጠን"}, {"Recorded batches", "የተመዘገቡ ግዢዎች"},
         {"Parts at or below 5", "ከ5 ወይም ከዚያ በታች"}, {"Current price total", "የአሁኑ ዋጋ ድምር"}
