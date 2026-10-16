@@ -1,19 +1,19 @@
-Imports System.Windows.Forms
+﻿Imports System.Windows.Forms
 
 Public Module LanguageService
     Public Event LanguageChanged As EventHandler
     Public Property IsAmharic As Boolean = False
 
     Private ReadOnly translations As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
-        {"Inventory Management", "የእቃ አስተዳደር"}, {"Operations dashboard", "የስራ አስተዳደር ዳሽቦርድ"},
-        {"Add Spare Part", "የመለዋወጫ እቃ ጨምር"}, {"Issue Spare Part", "የመለዋወጫ እቃ አውጣ"},
+        {"Inventory Management", "የእቃ አስተዳደር"}, {"Inventory Management System", "የእቃ አስተዳደር"}, {"Operations dashboard", "የስራ አስተዳደር ዳሽቦርድ"},
+        {"Add Spare Part", "የመለዋወጫ እቃ ጨምር"}, {"Add Spare Parts", "የመለዋወጫ እቃ ጨምር"}, {"Issue Spare Part", "የመለዋወጫ እቃ አውጣ"}, {"Issue Spare Parts", "የመለዋወጫ እቃ አውጣ"},
         {"Inventory List", "የእቃ ዝርዝር"}, {"Purchase Batches", "የግዢ ዝርዝር"},
         {"Sold Items", "የተሸጡ እቃዎች"}, {"Stock Card", "የእቃ እንቅስቃሴ"},
-        {"Suppliers", "አቅራቢዎች"}, {"Customers", "ደንበኞች"}, {"Record Payment", "ክፍያ መዝግብ"},
-        {"Users & Roles", "ተጠቃሚዎች እና ሚናዎች"}, {"Manage Categories", "ምድቦችን አስተዳድር"},
-        {"Adjust Stock", "የእቃ ማስተካከያ"}, {"Financial Reports", "የፋይናንስ ሪፖርቶች"},
+        {"Suppliers", "አቅራቢዎች"}, {"Supplier Management", "አቅራቢዎች"}, {"Customers", "ደንበኞች"}, {"Customer Management", "ደንበኞች"}, {"Record Payment", "ክፍያ መዝግብ"},
+        {"Users & Roles", "ተጠቃሚዎች እና ሚናዎች"}, {"Users and roles", "ተጠቃሚዎች እና ሚናዎች"}, {"Manage Categories", "ምድቦችን አስተዳድር"}, {"Manage categories", "ምድቦችን አስተዳድር"},
+        {"Adjust Stock", "የእቃ ማስተካከያ"}, {"Inventory adjustment", "የእቃ ማስተካከያ"}, {"Financial Reports", "የፋይናንስ ሪፖርቶች"},
         {"Record Expense", "ወጪ መዝግብ"}, {"Process Return", "መመለሻ አስኬድ"},
-        {"Database Backup", "የዳታቤዝ ባክአፕ"}, {"Exit", "ውጣ"}, {"Stock on hand", "በእጅ ያለ እቃ"},
+        {"Database Backup", "የዳታቤዝ ባክአፕ"}, {"Database backup", "የዳታቤዝ ባክአፕ"}, {"Exit", "ውጣ"}, {"Stock on hand", "በእጅ ያለ እቃ"},
         {"Low inventory", "ዝቅተኛ እቃ"}, {"Sales today", "የዛሬ ሽያጭ"},
         {"Current quantity", "አሁን ያለ መጠን"}, {"Recorded batches", "የተመዘገቡ ግዢዎች"},
         {"Parts at or below 5", "ከ5 ወይም ከዚያ በታች"}, {"Current price total", "የአሁኑ ዋጋ ድምር"}

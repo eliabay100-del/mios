@@ -51,6 +51,10 @@ Public Module ModernTheme
         AddHandler form.Shown, Sub(sender, e)
                                     ScaleForCurrentDpi(form)
                                     StyleContent(form)
+                                    ' Apply the active language so forms opened in Amharic
+                                    ' are translated from the start, instead of only when
+                                    ' the language button toggles on an already-open form.
+                                    If LanguageService.IsAmharic Then LanguageService.ApplyTo(form)
                                 End Sub
 
         ' The language subscription lives on a module-level event, so it would pin
@@ -73,6 +77,9 @@ Public Module ModernTheme
     Public Sub RefreshContent(root As Control)
         ScaleForCurrentDpi(root)
         StyleContent(root)
+        ' Dynamically rebuilt sections use English strings; translate them too
+        ' when Amharic is active, so they don't revert to untranslated text.
+        If LanguageService.IsAmharic Then LanguageService.ApplyTo(root)
     End Sub
 
     ' ---- Buttons --------------------------------------------------------
