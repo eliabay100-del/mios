@@ -7,7 +7,7 @@ Public Class Add_SparePart
     Private txtPhoneNumber As TextBox
     Private txtSupplierName As TextBox
     Private txtAddress As TextBox
-    Private txtPartNumber As TextBox
+    Private txtPartNumber As ComboBox
     Private txtDescription As TextBox
     Private txtQuantity As TextBox
     Private txtUnitPrice As TextBox
@@ -21,6 +21,7 @@ Public Class Add_SparePart
     Private savedSupplierName As String = ""
     Private txtSearchName As TextBox
     Private txtNewSupplierPhone As TextBox
+    Private allPartNumbers As List(Of String) = Nothing
 
     ' A brand-new supplier is not written to the database until the part it
     ' supplies is saved, so backing out of the form cannot leave a supplier with
@@ -438,9 +439,14 @@ Public Class Add_SparePart
         }
         panel.Controls.Add(lblPartNumber)
 
-        txtPartNumber = ModernTheme.MakeTextBox()
+        txtPartNumber = ModernTheme.MakeComboBox()
         txtPartNumber.Location = New Point(150, 66)
         txtPartNumber.Width = 200
+        txtPartNumber.DropDownStyle = ComboBoxStyle.DropDown
+        txtPartNumber.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+        txtPartNumber.AutoCompleteSource = AutoCompleteSource.CustomSource
+        EnsurePartNumbersLoaded()
+        If allPartNumbers IsNot Nothing Then txtPartNumber.AutoCompleteCustomSource.AddRange(allPartNumbers.ToArray())
         panel.Controls.Add(txtPartNumber)
 
         Dim btnCheckPart As Button = ModernTheme.MakePrimaryButton("Check part")
@@ -546,6 +552,25 @@ Public Class Add_SparePart
         panel.Controls.Add(btnCancel)
         ModernTheme.RefreshContent(Me)
         FitToContent()
+    End Sub
+
+    Private Sub EnsurePartNumbersLoaded()
+        If allPartNumbers IsNot Nothing Then Return
+        allPartNumbers = New List(Of String)
+        Try
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Using cmd As New SqlCommand("SELECT PartNumber FROM mn.SpareParts ORDER BY PartNumber", conn)
+                    Using r As SqlDataReader = cmd.ExecuteReader()
+                        While r.Read()
+                            allPartNumbers.Add(r("PartNumber").ToString())
+                        End While
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            AppLogger.Error("Failed to load part numbers for autocomplete", ex)
+        End Try
     End Sub
 
     Private Sub LoadCategories()
@@ -885,7 +910,7 @@ Public Class Add_SparePart
 
     ' Sections are rebuilt by disposing the previous controls, so a stale
     ' reference must be treated as empty rather than touched.
-    Private Shared Function ControlHasText(box As TextBox) As Boolean
+    Private Shared Function ControlHasText(box As Control) As Boolean
         If box Is Nothing OrElse box.IsDisposed Then Return False
         Return box.Text.Trim().Length > 0
     End Function

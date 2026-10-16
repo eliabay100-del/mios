@@ -1,4 +1,7 @@
-﻿Imports System.Data.SqlClient
+Imports System.Data.SqlClient
+Imports System.Drawing
+Imports System.Drawing.Printing
+Imports System.Windows.Forms
 
 Public Class Issue_SparePart
     ' Form controls
@@ -19,8 +22,9 @@ Public Class Issue_SparePart
     Private customerExists As Boolean = False
     Private savedPhone As String = ""
     Private savedSearchName As String = ""
-    Private txtSearchName As TextBox
+Private txtSearchName As TextBox
     Private txtNewCustomerPhone As TextBox
+    Private allPartNumbers As List(Of String) = Nothing
     Private suppressCloseConfirmation As Boolean = False
 
     Private Sub Issue_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -470,10 +474,15 @@ Public Class Issue_SparePart
             .BackColor = ModernTheme.SurfaceAlt
         }
 
-        Dim txtPartNum As TextBox = ModernTheme.MakeTextBox()
+        Dim txtPartNum As ComboBox = ModernTheme.MakeComboBox()
         txtPartNum.Location = New Point(0, 0)
         txtPartNum.Width = 200
         txtPartNum.Font = New Font("Segoe UI", 9.5F)
+        txtPartNum.DropDownStyle = ComboBoxStyle.DropDown
+        txtPartNum.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+        txtPartNum.AutoCompleteSource = AutoCompleteSource.CustomSource
+        EnsurePartNumbersLoaded()
+        If allPartNumbers IsNot Nothing Then txtPartNum.AutoCompleteCustomSource.AddRange(allPartNumbers.ToArray())
         panel.Controls.Add(txtPartNum)
 
         Dim txtQty As TextBox = ModernTheme.MakeTextBox()
@@ -584,12 +593,20 @@ Public Class Issue_SparePart
                 conn.Open()
                 Dim transaction As SqlTransaction = conn.BeginTransaction()
 
+                ' A VAT payable liability account is required from the moment the
+                ' first VAT-bearing invoice is posted; create it lazily so running
+                ' the current schema never blocks the sale.
+                Using cmdVat As New SqlCommand("IF NOT EXISTS (SELECT 1 FROM mn.Account WHERE AccountCode = '2200') INSERT INTO mn.Account (AccountCode, AccountName, AccountType) VALUES ('2200', 'VAT Payable', 'LIABILITY')", conn, transaction)
+                    cmdVat.ExecuteNonQuery()
+                End Using
+
                 Try
                     ' Handle customer (new or existing)
                     Dim issuedTo As String = ""
                     Dim invoiceID As Integer
                     Dim totalRevenue As Decimal = 0
                     Dim totalCOGSForInvoice As Decimal = 0
+                    Dim receiptItems As New List(Of ReceiptItemData)
 
                     If isNewCustomer Then
                         ' Insert new customer (PHP: INSERT INTO mn.Customers)
@@ -710,6 +727,12 @@ Public Class Issue_SparePart
                             cmd.ExecuteNonQuery()
                         End Using
 
+                        receiptItems.Add(New ReceiptItemData With {
+                            .PartNumber = item.PartNumber,
+                            .Quantity = originalQty,
+                            .UnitPrice = item.SellingPrice
+                        })
+
                         ' PROCESS EACH BATCH
                         For Each batch As BatchData In batches
                             ' Insert into IssuedItem (PHP: INSERT INTO mn.IssuedParts)
@@ -778,17 +801,21 @@ Public Class Issue_SparePart
                         End Using
                     Next
 
-                    Dim updateInvoiceSql As String = "UPDATE mn.SalesInvoice SET Subtotal = @subtotal, TotalAmount = @total WHERE InvoiceID = @invoiceID"
+                    Dim updateInvoiceSql As String = "UPDATE mn.SalesInvoice SET Subtotal = @subtotal, TaxAmount = @tax, TotalAmount = @total WHERE InvoiceID = @invoiceID"
+                    Dim vatAmount As Decimal = Math.Round(totalRevenue * 0.15D, 2)
+                    Dim invoiceTotal As Decimal = totalRevenue + vatAmount
                     Using cmd As New SqlCommand(updateInvoiceSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@subtotal", totalRevenue)
-                        cmd.Parameters.AddWithValue("@total", totalRevenue)
+                        cmd.Parameters.AddWithValue("@tax", vatAmount)
+                        cmd.Parameters.AddWithValue("@total", invoiceTotal)
                         cmd.Parameters.AddWithValue("@invoiceID", invoiceID)
                         cmd.ExecuteNonQuery()
                     End Using
 
                     AccountingService.PostJournalEntry(conn, transaction, "SALE", invoiceID, "Spare parts issued to customer", New List(Of JournalLineData) From {
-                        New JournalLineData With {.AccountCode = "1100", .Debit = totalRevenue, .Credit = 0},
+                        New JournalLineData With {.AccountCode = "1100", .Debit = invoiceTotal, .Credit = 0},
                         New JournalLineData With {.AccountCode = "4000", .Debit = 0, .Credit = totalRevenue},
+                        New JournalLineData With {.AccountCode = "2200", .Debit = 0, .Credit = vatAmount},
                         New JournalLineData With {.AccountCode = "5000", .Debit = totalCOGSForInvoice, .Credit = 0},
                         New JournalLineData With {.AccountCode = "1200", .Debit = 0, .Credit = totalCOGSForInvoice}
                     })
@@ -798,8 +825,14 @@ Public Class Issue_SparePart
                     suppressCloseConfirmation = True
 
                     ' Show success
-                    MessageBox.Show("Spare parts issued successfully!", "Success",
+                    MessageBox.Show(String.Format("Spare parts issued successfully!{0}Invoice ID: {1}{0}Subtotal: {2:C2}{0}VAT (15%): {3:C2}{0}Total: {4:C2}", Environment.NewLine, invoiceID, totalRevenue, vatAmount, invoiceTotal), "Success",
                                   MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                    suppressCloseConfirmation = True
+                    Dim doPrint As DialogResult = MessageBox.Show("Do you want to print a sales receipt (VAT 15% included) now?", "Print receipt", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
+                    If doPrint = DialogResult.Yes Then
+                        PrintSalesReceipt(invoiceID, issuedTo, receiptItems, totalRevenue, vatAmount, invoiceTotal)
+                    End If
 
                     ' Close form
                     Me.Close()
@@ -816,6 +849,25 @@ Public Class Issue_SparePart
             AppLogger.Error("Failed to issue spare parts", ex)
             MessageBox.Show("Error issuing parts: " & ex.Message, "Database Error",
                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub EnsurePartNumbersLoaded()
+        If allPartNumbers IsNot Nothing Then Return
+        allPartNumbers = New List(Of String)
+        Try
+            Using conn As New SqlConnection(DBModule.ConnString)
+                conn.Open()
+                Using cmd As New SqlCommand("SELECT PartNumber FROM mn.SpareParts ORDER BY PartNumber", conn)
+                    Using r As SqlDataReader = cmd.ExecuteReader()
+                        While r.Read()
+                            allPartNumbers.Add(r("PartNumber").ToString())
+                        End While
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            AppLogger.Error("Failed to load part numbers", ex)
         End Try
     End Sub
 
@@ -886,4 +938,66 @@ Public Class Issue_SparePart
         If box Is Nothing OrElse box.IsDisposed Then Return False
         Return box.Text.Trim().Length > 0
     End Function
+    ' =============== PRINT SALES RECEIPT ===============
+    Private Sub PrintSalesReceipt(invoiceID As Integer, customer As String, items As List(Of ReceiptItemData), subtotal As Decimal, vat As Decimal, total As Decimal)
+        Using pd As New Printing.PrintDocument()
+            AddHandler pd.PrintPage, Sub(s, eArgs)
+                Dim titleFont As New Font("Segoe UI", 14, FontStyle.Bold)
+                Dim headFont As New Font("Segoe UI", 10, FontStyle.Bold)
+                Dim font As New Font("Segoe UI", 9)
+                Dim x As Integer = eArgs.MarginBounds.Left
+                Dim y As Integer = eArgs.MarginBounds.Top
+                Dim width As Integer = eArgs.MarginBounds.Width
+                Dim lh As Integer = CInt(New Font("Segoe UI", 9).GetHeight(eArgs.Graphics)) + 3
+
+                eArgs.Graphics.DrawString("MIOS Inventory Management", titleFont, Brushes.Black, x, y) : y += lh + 2
+                eArgs.Graphics.DrawString("SALES RECEIPT", headFont, Brushes.Black, x, y) : y += lh + 4
+                eArgs.Graphics.DrawString("Invoice #: " & invoiceID & "   Date: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm"), font, Brushes.Black, x, y) : y += lh
+                eArgs.Graphics.DrawString("Customer: " & customer, font, Brushes.Black, x, y) : y += lh + 4
+                eArgs.Graphics.DrawString("Part Number", headFont, Brushes.Black, x, y)
+                eArgs.Graphics.DrawString("Qty", headFont, Brushes.Black, x + 250, y)
+                eArgs.Graphics.DrawString("Unit", headFont, Brushes.Black, x + 320, y)
+                eArgs.Graphics.DrawString("Line", headFont, Brushes.Black, x + 400, y)
+                y += lh + 2
+                eArgs.Graphics.DrawLine(Pens.Black, x, y, x + width, y)
+                y += 6
+                For Each it As ReceiptItemData In items
+                    eArgs.Graphics.DrawString(it.PartNumber, font, Brushes.Black, x, y)
+                    eArgs.Graphics.DrawString(it.Quantity.ToString("N0"), font, Brushes.Black, x + 250, y)
+                    eArgs.Graphics.DrawString(it.UnitPrice.ToString("N2"), font, Brushes.Black, x + 320, y)
+                    eArgs.Graphics.DrawString((it.Quantity * it.UnitPrice).ToString("N2"), font, Brushes.Black, x + 400, y)
+                    y += lh
+                Next
+                y += 4
+                eArgs.Graphics.DrawLine(Pens.Black, x, y, x + width, y)
+                y += 6
+                eArgs.Graphics.DrawString("Subtotal", font, Brushes.Black, x, y)
+                eArgs.Graphics.DrawString(subtotal.ToString("N2"), font, Brushes.Black, x + 400, y)
+                y += lh
+                eArgs.Graphics.DrawString("VAT (15%)", font, Brushes.Black, x, y)
+                eArgs.Graphics.DrawString(vat.ToString("N2"), font, Brushes.Black, x + 400, y)
+                y += lh
+                eArgs.Graphics.DrawString("Total", New Font("Segoe UI", 10, FontStyle.Bold), Brushes.Black, x, y)
+                eArgs.Graphics.DrawString(total.ToString("N2"), New Font("Segoe UI", 10, FontStyle.Bold), Brushes.Black, x + 400, y)
+                y += lh + 6
+                eArgs.Graphics.DrawString("Thank you for your purchase.", New Font("Segoe UI", 8), Brushes.Black, x, y)
+
+                titleFont.Dispose() : headFont.Dispose() : font.Dispose()
+                eArgs.HasMorePages = False
+            End Sub
+
+            Using dlg As New PrintDialog()
+                dlg.Document = pd
+                If dlg.ShowDialog(Me) = DialogResult.OK Then
+                    pd.Print()
+                End If
+            End Using
+        End Using
+    End Sub
+
+    Private Class ReceiptItemData
+        Public Property PartNumber As String
+        Public Property Quantity As Integer
+        Public Property UnitPrice As Decimal
+    End Class
 End Class

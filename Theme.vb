@@ -388,6 +388,17 @@ Public Module ModernTheme
         Return txt
     End Function
 
+    Public Function MakeComboBox() As ComboBox
+        Dim c As New ComboBox With {
+            .BackColor = Color.White,
+            .ForeColor = PrimaryText,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 10.0F, FontStyle.Regular),
+            .DropDownStyle = ComboBoxStyle.DropDown
+        }
+        Return c
+    End Function
+
     ' ---- Branding -------------------------------------------------------
 
     Private cachedLogo As Image = Nothing
