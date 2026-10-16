@@ -22,6 +22,13 @@ Public Class Add_SparePart
     Private txtSearchName As TextBox
     Private txtNewSupplierPhone As TextBox
 
+    ' A brand-new supplier is not written to the database until the part it
+    ' supplies is saved, so backing out of the form cannot leave a supplier with
+    ' no stock behind.
+    Private pendingSupplierPhone As String = ""
+    Private pendingSupplierAddress As String = ""
+    Private suppressCloseConfirmation As Boolean = False
+
     Private Sub Add_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If Not SecurityContext.HasPermission("INVENTORY_RECEIVE") Then
             MessageBox.Show("Your role cannot receive inventory.", "Access denied", MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -35,7 +42,6 @@ Public Class Add_SparePart
         Me.FormBorderStyle = FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
         Me.MinimizeBox = False
-        ModernTheme.EnableVerticalScroll(Me, 720)
         CreateTitle()
         ShowSupplierCheckSection()
     End Sub
@@ -64,6 +70,34 @@ Public Class Add_SparePart
             Me.Controls.Remove(ctrl)
             ctrl.Dispose()
         Next
+    End Sub
+
+    ''' <summary>
+    ''' Resizes the dialog so the current section is framed snugly, without ever
+    ''' growing past the working area of the screen it is shown on (the taller
+    ''' sections then simply scroll). Keeps the dialog consistent with the issue
+    ''' form instead of leaving a large empty area under short sections.
+    ''' </summary>
+    Private Sub FitToContent()
+        Me.PerformLayout()
+
+        Dim contentBottom As Integer = 0
+        For Each ctrl As Control In Me.Controls
+            If ctrl.Visible Then contentBottom = Math.Max(contentBottom, ctrl.Bottom)
+        Next
+        If contentBottom <= 0 Then Return
+
+        Dim frame As Integer = Me.Height - Me.ClientSize.Height
+        Dim target As Integer = contentBottom + 24 + frame
+        Dim maxHeight As Integer = Screen.FromControl(Me).WorkingArea.Height - 24
+        If target > maxHeight Then target = maxHeight
+        If target < 240 Then target = 240
+
+        If target <> Me.Height Then Me.Height = target
+
+        ' Rebuilding a section leaves the previous section's scroll offset behind,
+        ' which would cut the top card off. Pin the view back to the title.
+        If AutoScrollPosition.Y <> 0 Then AutoScrollPosition = New Point(0, 0)
     End Sub
 
     Private Sub ShowSupplierCheckSection()
@@ -126,6 +160,7 @@ Public Class Add_SparePart
         AddHandler btnCancel.Click, AddressOf btnNewSupplier_Click
         panel.Controls.Add(btnCancel)
         ModernTheme.RefreshContent(Me)
+        FitToContent()
     End Sub
 
     Private Sub btnCheckSupplier_Click(sender As Object, e As EventArgs)
@@ -253,6 +288,7 @@ Public Class Add_SparePart
         AddHandler btnBack.Click, AddressOf btnBackToSupplierCheck_Click
         panel.Controls.Add(btnBack)
         ModernTheme.RefreshContent(Me)
+        FitToContent()
     End Sub
 
     Private Class SupplierMatch
@@ -343,6 +379,7 @@ Public Class Add_SparePart
         AddHandler btnBack.Click, AddressOf btnBackToSupplierCheck_Click
         panel.Controls.Add(btnBack)
         ModernTheme.RefreshContent(Me)
+        FitToContent()
     End Sub
 
     Private Sub btnContinueToParts_Click(sender As Object, e As EventArgs)
@@ -355,25 +392,17 @@ Public Class Add_SparePart
 
         Dim phoneNumber As String = txtNewSupplierPhone.Text.Trim()
         savedPhoneNumber = phoneNumber
+        savedSupplierName = supplierName
 
-        Try
-            Using conn As New SqlConnection(DBModule.ConnString)
-                conn.Open()
-                Dim sql As String = "INSERT INTO mn.Supplier (SupplierName, Phone, Address, CreatedAt) OUTPUT INSERTED.SupplierID VALUES (@name, @phone, @address, GETDATE())"
-                Using cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@name", supplierName)
-                    cmd.Parameters.AddWithValue("@phone", If(phoneNumber.Length = 0, DBNull.Value, CObj(phoneNumber)))
-                    cmd.Parameters.AddWithValue("@address", If(String.IsNullOrEmpty(txtAddress.Text), DBNull.Value, CObj(txtAddress.Text.Trim())))
-                    currentSupplierID = CInt(cmd.ExecuteScalar())
-                    currentSupplierName = supplierName
-                End Using
-                conn.Close()
-            End Using
-            ShowPartEntrySection()
-        Catch ex As Exception
-            AppLogger.Error("Failed to create supplier", ex)
-            MessageBox.Show("Error creating supplier: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
+        ' Remember the supplier but do not create it yet. It is inserted in the
+        ' same transaction as the part, so cancelling now leaves nothing behind.
+        pendingSupplierPhone = phoneNumber
+        pendingSupplierAddress = txtAddress.Text.Trim()
+        currentSupplierName = supplierName
+        currentSupplierID = -1
+        isNewSupplier = True
+
+        ShowPartEntrySection()
     End Sub
 
     Private Sub btnBackToSupplierCheck_Click(sender As Object, e As EventArgs)
@@ -516,6 +545,7 @@ Public Class Add_SparePart
         AddHandler btnCancel.Click, AddressOf btnCancel_Click
         panel.Controls.Add(btnCancel)
         ModernTheme.RefreshContent(Me)
+        FitToContent()
     End Sub
 
     Private Sub LoadCategories()
@@ -631,6 +661,19 @@ Public Class Add_SparePart
                 conn.Open()
                 Dim transaction As SqlTransaction = conn.BeginTransaction()
                 Try
+                    ' A new supplier becomes real only now, inside the same
+                    ' transaction as the stock it is supplying.
+                    If isNewSupplier AndAlso currentSupplierID <= 0 Then
+                        Dim insertSupplierSql As String = "INSERT INTO mn.Supplier (SupplierName, Phone, Address, CreatedAt) OUTPUT INSERTED.SupplierID VALUES (@name, @phone, @address, GETDATE())"
+                        Using cmd As New SqlCommand(insertSupplierSql, conn, transaction)
+                            cmd.Parameters.AddWithValue("@name", currentSupplierName)
+                            cmd.Parameters.AddWithValue("@phone", If(pendingSupplierPhone.Length = 0, DBNull.Value, CObj(pendingSupplierPhone)))
+                            cmd.Parameters.AddWithValue("@address", If(pendingSupplierAddress.Length = 0, DBNull.Value, CObj(pendingSupplierAddress)))
+                            currentSupplierID = CInt(cmd.ExecuteScalar())
+                        End Using
+                        isNewSupplier = False
+                    End If
+
                     Dim checkSql As String = "SELECT PartID, Quantity FROM mn.SpareParts WHERE PartNumber = @partNumber"
                     Dim partID As Integer = 0
                     Dim existingQty As Integer = 0
@@ -709,6 +752,7 @@ Public Class Add_SparePart
                     End Using
 
                     transaction.Commit()
+                    suppressCloseConfirmation = True
                     ShowSuccess(partNumber, quantity, unitPrice)
                 Catch ex As Exception
                     transaction.Rollback()
@@ -794,6 +838,7 @@ Public Class Add_SparePart
         AddHandler btnDone.Click, AddressOf btnDone_Click
         panel.Controls.Add(btnDone)
         ModernTheme.RefreshContent(Me)
+        FitToContent()
     End Sub
 
     Private Sub btnAddAnother_Click(sender As Object, e As EventArgs)
@@ -807,4 +852,41 @@ Public Class Add_SparePart
     Private Sub btnCancel_Click(sender As Object, e As EventArgs)
         Me.Close()
     End Sub
+
+    ''' <summary>
+    ''' Warns before throwing away typed-in values, so a stray Cancel or the
+    ''' window's close box cannot silently discard a part that was being entered.
+    ''' The successful-save path sets a flag first and is never prompted.
+    ''' </summary>
+    Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        If Not suppressCloseConfirmation AndAlso
+           e.CloseReason = CloseReason.UserClosing AndAlso
+           HasUnsavedInput() Then
+            Dim answer As DialogResult = MessageBox.Show(
+                Me,
+                "Discard the values you have entered?",
+                "Discard changes",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2)
+            If answer <> DialogResult.Yes Then
+                e.Cancel = True
+                Return
+            End If
+        End If
+        MyBase.OnFormClosing(e)
+    End Sub
+
+    Private Function HasUnsavedInput() As Boolean
+        Return ControlHasText(txtPartNumber) OrElse
+               ControlHasText(txtDescription) OrElse
+               ControlHasText(txtSupplierName)
+    End Function
+
+    ' Sections are rebuilt by disposing the previous controls, so a stale
+    ' reference must be treated as empty rather than touched.
+    Private Shared Function ControlHasText(box As TextBox) As Boolean
+        If box Is Nothing OrElse box.IsDisposed Then Return False
+        Return box.Text.Trim().Length > 0
+    End Function
 End Class

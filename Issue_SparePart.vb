@@ -21,6 +21,7 @@ Public Class Issue_SparePart
     Private savedSearchName As String = ""
     Private txtSearchName As TextBox
     Private txtNewCustomerPhone As TextBox
+    Private suppressCloseConfirmation As Boolean = False
 
     Private Sub Issue_SparePart_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ModernTheme.ApplyWindowTheme(Me)
@@ -794,6 +795,7 @@ Public Class Issue_SparePart
 
                     ' Commit transaction (PHP: sqlsrv_commit)
                     transaction.Commit()
+                    suppressCloseConfirmation = True
 
                     ' Show success
                     MessageBox.Show("Spare parts issued successfully!", "Success",
@@ -836,4 +838,52 @@ Public Class Issue_SparePart
     Private Sub btnCancel_Click(sender As Object, e As EventArgs)
         Me.Close()
     End Sub
+
+    ''' <summary>
+    ''' Warns before throwing away a part-issue that is half entered. The
+    ''' successful-issue path sets a flag first, so it never prompts.
+    ''' </summary>
+    Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        If Not suppressCloseConfirmation AndAlso
+           e.CloseReason = CloseReason.UserClosing AndAlso
+           HasUnsavedInput() Then
+            Dim answer As DialogResult = MessageBox.Show(
+                Me,
+                "Discard the customer details and items you have entered?",
+                "Discard changes",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2)
+            If answer <> DialogResult.Yes Then
+                e.Cancel = True
+                Return
+            End If
+        End If
+        MyBase.OnFormClosing(e)
+    End Sub
+
+    Private Function HasUnsavedInput() As Boolean
+        If ControlHasText(txtFirstName) OrElse
+           ControlHasText(txtLastName) OrElse
+           ControlHasText(txtNewCustomerPhone) OrElse
+           ControlHasText(txtAddress) OrElse
+           ControlHasText(txtEmail) Then
+            Return True
+        End If
+
+        ' A part number typed into an item row counts as work in progress.
+        For Each panel As Panel In itemPanels
+            If panel Is Nothing OrElse panel.IsDisposed OrElse panel.Controls.Count = 0 Then Continue For
+            If ControlHasText(TryCast(panel.Controls(0), TextBox)) Then Return True
+        Next
+
+        Return False
+    End Function
+
+    ' Sections are rebuilt by disposing the previous controls, so a stale
+    ' reference must be treated as empty rather than touched.
+    Private Shared Function ControlHasText(box As TextBox) As Boolean
+        If box Is Nothing OrElse box.IsDisposed Then Return False
+        Return box.Text.Trim().Length > 0
+    End Function
 End Class

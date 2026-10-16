@@ -155,10 +155,17 @@ Public Class View_PurchaseBatch
 
 
     Private Sub LoadPurchaseBatches(Optional ByVal partFilter As String = "")
-        batchesArray = GetPurchaseBatchesFromDB(partFilter)
-        filteredArray = batchesArray
-        DisplayBatches(filteredArray)
-        UpdateStatistics()
+        ' Reading every batch and redrawing the grid can take a moment on a slow
+        ' link, so show the busy cursor and always restore it.
+        Me.Cursor = Cursors.WaitCursor
+        Try
+            batchesArray = GetPurchaseBatchesFromDB(partFilter)
+            filteredArray = batchesArray
+            DisplayBatches(filteredArray)
+            UpdateStatistics()
+        Finally
+            Me.Cursor = Cursors.Default
+        End Try
     End Sub
 
     Private Function GetPurchaseBatchesFromDB(Optional ByVal partFilter As String = "") As PurchaseBatch()

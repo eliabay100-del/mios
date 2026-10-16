@@ -11,7 +11,7 @@ Public Class FirstRunSetupForm
 
     Public Sub New()
         Me.Text = "Create MIOS user"
-        Me.Size = New Size(460, 330)
+        Me.Size = New Size(520, 400)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
@@ -30,18 +30,28 @@ Public Class FirstRunSetupForm
         AddField("Password", txtPassword, 132, True)
         AddField("Confirm password", txtConfirmPassword, 182, True)
 
-        lblError.ForeColor = Color.Firebrick
-        lblError.Location = New Point(30, 220)
-        lblError.Size = New Size(390, 24)
+        lblError.ForeColor = ModernTheme.Danger
+        lblError.Location = New Point(30, 228)
+        lblError.Size = New Size(450, 24)
         Me.Controls.Add(lblError)
 
         Dim btnCreate As Button = ModernTheme.MakePrimaryButton("Create user")
-        btnCreate.Location = New Point(270, 255)
+        btnCreate.Location = New Point(230, 268)
         btnCreate.Size = New Size(140, 35)
         btnCreate.DialogResult = DialogResult.None
         AddHandler btnCreate.Click, AddressOf CreateUser_Click
         Me.Controls.Add(btnCreate)
         Me.AcceptButton = btnCreate
+
+        ' Without a way back the only escape was the window's close box, which
+        ' left the user unsure whether the setup had done anything.
+        Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
+        btnCancel.Location = New Point(380, 268)
+        btnCancel.Size = New Size(100, 35)
+        btnCancel.DialogResult = DialogResult.Cancel
+        Me.Controls.Add(btnCancel)
+        Me.CancelButton = btnCancel
+
         txtUsername.Focus()
     End Sub
 

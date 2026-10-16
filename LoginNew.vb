@@ -9,7 +9,7 @@ Public Class LoginNew
     Private WithEvents txtUsername As New TextBox With {.Location = New Point(138, 172), .Size = New Size(240, 25), .TabIndex = 0}
     Private WithEvents txtPassword As New TextBox With {.Location = New Point(138, 214), .Size = New Size(240, 25), .PasswordChar = "*"c, .TabIndex = 1}
     Private WithEvents btnLogin As New Button With {.Text = "Sign in", .Location = New Point(138, 282), .Size = New Size(240, 44), .TabIndex = 2}
-    Private WithEvents lblError As New Label With {.ForeColor = Color.Red, .Location = New Point(48, 252), .Size = New Size(330, 20)}
+    Private WithEvents lblError As New Label With {.ForeColor = ModernTheme.Danger, .Location = New Point(48, 252), .Size = New Size(330, 20)}
 
     ' Properties to hold login info
     Public Property LoginSuccessful As Boolean = False
