@@ -24,6 +24,7 @@ Public Class Issue_SparePart
     Private savedSearchName As String = ""
 Private txtSearchName As TextBox
     Private txtNewCustomerPhone As TextBox
+    Private chkIncludeVat As CheckBox
     Private allPartNumbers As List(Of String) = Nothing
     Private suppressCloseConfirmation As Boolean = False
 
@@ -152,14 +153,24 @@ Private txtSearchName As TextBox
         txtRemarks.Multiline = True
         card.Controls.Add(txtRemarks)
 
+        chkIncludeVat = New CheckBox With {
+            .Text = "Include VAT (15%)",
+            .Location = New Point(20, 150),
+            .Size = New Size(200, 26),
+            .Checked = True,
+            .Font = New Font("Segoe UI", 9.5F, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
+        card.Controls.Add(chkIncludeVat)
+
         Dim btnIssue As Button = ModernTheme.MakePrimaryButton(If(isNewCustomer, "Save customer & issue", "Issue parts"))
-        btnIssue.Location = New Point(20, 158)
+        btnIssue.Location = New Point(20, 184)
         btnIssue.Width = 240
         AddHandler btnIssue.Click, Sub(s, ev) ProcessIssue(isNewCustomer)
         card.Controls.Add(btnIssue)
 
         Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
-        btnCancel.Location = New Point(272, 158)
+        btnCancel.Location = New Point(272, 184)
         btnCancel.Width = 140
         btnCancel.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnCancel.Click, AddressOf btnCancel_Click
@@ -801,9 +812,10 @@ Private txtSearchName As TextBox
                         End Using
                     Next
 
-                    Dim updateInvoiceSql As String = "UPDATE mn.SalesInvoice SET Subtotal = @subtotal, TaxAmount = @tax, TotalAmount = @total WHERE InvoiceID = @invoiceID"
-                    Dim vatAmount As Decimal = Math.Round(totalRevenue * 0.15D, 2)
+                    Dim includeVat As Boolean = If(chkIncludeVat Is Nothing OrElse chkIncludeVat.IsDisposed, True, chkIncludeVat.Checked)
+                    Dim vatAmount As Decimal = If(includeVat, Math.Round(totalRevenue * 0.15D, 2), 0D)
                     Dim invoiceTotal As Decimal = totalRevenue + vatAmount
+                    Dim updateInvoiceSql As String = "UPDATE mn.SalesInvoice SET Subtotal = @subtotal, TaxAmount = @tax, TotalAmount = @total WHERE InvoiceID = @invoiceID"
                     Using cmd As New SqlCommand(updateInvoiceSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@subtotal", totalRevenue)
                         cmd.Parameters.AddWithValue("@tax", vatAmount)
@@ -824,18 +836,13 @@ Private txtSearchName As TextBox
                     transaction.Commit()
                     suppressCloseConfirmation = True
 
-                    ' Show success
-                    MessageBox.Show(String.Format("Spare parts issued successfully!{0}Invoice ID: {1}{0}Subtotal: {2:C2}{0}VAT (15%): {3:C2}{0}Total: {4:C2}", Environment.NewLine, invoiceID, totalRevenue, vatAmount, invoiceTotal), "Success",
-                                  MessageBoxButtons.OK, MessageBoxIcon.Information)
-
+                    ' Show a success screen with the totals and an opt-in receipt
+                    ' preview/print. The form stays open so the seller can print
+                    ' from a dedicated button; closing is handled by "Done".
                     suppressCloseConfirmation = True
-                    Dim doPrint As DialogResult = MessageBox.Show("Do you want to print a sales receipt (VAT 15% included) now?", "Print receipt", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
-                    If doPrint = DialogResult.Yes Then
-                        PrintSalesReceipt(invoiceID, issuedTo, receiptItems, totalRevenue, vatAmount, invoiceTotal)
-                    End If
-
-                    ' Close form
-                    Me.Close()
+                    ShowIssueSuccess(invoiceID, issuedTo, receiptItems, totalRevenue, vatAmount, invoiceTotal)
+                    ModernTheme.RefreshContent(Me)
+                    FitToContent()
 
                 Catch ex As Exception
                     ' Rollback transaction (PHP: sqlsrv_rollback)
@@ -939,6 +946,64 @@ Private txtSearchName As TextBox
         Return box.Text.Trim().Length > 0
     End Function
     ' =============== PRINT SALES RECEIPT ===============
+    Private Sub ShowIssueSuccess(invoiceID As Integer, customer As String, items As List(Of ReceiptItemData), subtotal As Decimal, vat As Decimal, total As Decimal)
+        ClearFormExceptTitle()
+
+        Dim card As Panel = MakeCard(30, 80, 680, 320)
+        card.Controls.Add(MakeSectionTitle("Issued successfully", 20, 16))
+        card.Controls.Add(MakeHint("Invoice #" & invoiceID & " - " & customer, 20, 50, 640))
+
+        cmdLabel(card, "Subtotal", subtotal.ToString("N2"), 80)
+        If vat > 0 Then cmdLabel(card, "VAT (15%)", vat.ToString("N2"), 118)
+        cmdLabel(card, "Total", total.ToString("N2"), 156, True)
+
+        Dim btnPreview As Button = ModernTheme.MakeSecondaryButton("Preview receipt")
+        btnPreview.Location = New Point(20, 210)
+        btnPreview.Width = 200
+        btnPreview.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnPreview.Click, Sub(s, ev)
+            PrintSalesReceipt(invoiceID, customer, items, subtotal, vat, total)
+        End Sub
+        card.Controls.Add(btnPreview)
+
+        Dim btnPrint As Button = ModernTheme.MakePrimaryButton("Print receipt")
+        btnPrint.Location = New Point(232, 210)
+        btnPrint.Width = 200
+        AddHandler btnPrint.Click, Sub(s, ev)
+            Dim copyItems As New List(Of ReceiptItemData)(items)
+            PrintSalesReceiptDirect(invoiceID, customer, copyItems, subtotal, vat, total, openPreviewFirst:=False)
+        End Sub
+        card.Controls.Add(btnPrint)
+
+        Dim btnDone As Button = ModernTheme.MakeSecondaryButton("Done")
+        btnDone.Location = New Point(444, 210)
+        btnDone.Width = 120
+        btnDone.BackColor = ModernTheme.SurfaceAlt
+        AddHandler btnDone.Click, Sub(s, ev) Me.Close()
+        card.Controls.Add(btnDone)
+
+        Me.Controls.Add(card)
+    End Sub
+
+    Private Sub cmdLabel(card As Panel, text As String, value As String, y As Integer, Optional bold As Boolean = False)
+        card.Controls.Add(New Label With {
+            .Text = text, .Location = New Point(20, y), .Size = New Size(200, 24),
+            .Font = New Font("Segoe UI", 10.5F, If(bold, FontStyle.Bold, FontStyle.Regular)),
+            .ForeColor = ModernTheme.MutedText
+        })
+        card.Controls.Add(New Label With {
+            .Text = value, .Location = New Point(260, y), .Size = New Size(160, 24),
+            .Font = New Font("Segoe UI", 10.5F, If(bold, FontStyle.Bold, FontStyle.Regular)),
+            .ForeColor = ModernTheme.PrimaryText,
+            .TextAlign = ContentAlignment.MiddleRight
+        })
+    End Sub
+
+    Private Sub PrintSalesReceiptDirect(invoiceID As Integer, customer As String, items As List(Of ReceiptItemData), subtotal As Decimal, vat As Decimal, total As Decimal, openPreviewFirst As Boolean)
+        ' Keep a single core method: PrintSalesReceipt already shows PrintPreviewDialog.
+        PrintSalesReceipt(invoiceID, customer, items, subtotal, vat, total)
+    End Sub
+
     Private Sub PrintSalesReceipt(invoiceID As Integer, customer As String, items As List(Of ReceiptItemData), subtotal As Decimal, vat As Decimal, total As Decimal)
         Using pd As New Printing.PrintDocument()
             AddHandler pd.PrintPage, Sub(s, eArgs)
@@ -986,11 +1051,11 @@ Private txtSearchName As TextBox
                 eArgs.HasMorePages = False
             End Sub
 
-            Using dlg As New PrintDialog()
+            Using dlg As New PrintPreviewDialog()
                 dlg.Document = pd
-                If dlg.ShowDialog(Me) = DialogResult.OK Then
-                    pd.Print()
-                End If
+                dlg.Width = 800
+                dlg.Height = 600
+                dlg.ShowDialog(Me)
             End Using
         End Using
     End Sub
