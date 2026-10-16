@@ -51,12 +51,11 @@ Public Module ModernTheme
         AddHandler form.Shown, Sub(sender, e)
                                     ScaleForCurrentDpi(form)
                                     StyleContent(form)
-                                    ' Forms must always start at the top-left, regardless of what
-                                    ' scroll offset WinForms carried over from the previous form.
+                                    ' Open at the screen's top-left corner: some forms were
+                                    ' scrolling to their bottom content on open. Pin both the
+                                    ' window position and the scroll offset to the origin.
+                                    form.Location = New Point(0, 0)
                                     form.AutoScrollPosition = New Point(0, 0)
-                                    ' Apply the active language so forms opened in Amharic
-                                    ' are translated from the start, instead of only when
-                                    ' the language button toggles on an already-open form.
                                     If LanguageService.IsAmharic Then LanguageService.ApplyTo(form)
                                 End Sub
 
