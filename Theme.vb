@@ -51,6 +51,9 @@ Public Module ModernTheme
         AddHandler form.Shown, Sub(sender, e)
                                     ScaleForCurrentDpi(form)
                                     StyleContent(form)
+                                    ' Forms must always start at the top-left, regardless of what
+                                    ' scroll offset WinForms carried over from the previous form.
+                                    form.AutoScrollPosition = New Point(0, 0)
                                     ' Apply the active language so forms opened in Amharic
                                     ' are translated from the start, instead of only when
                                     ' the language button toggles on an already-open form.
@@ -77,6 +80,10 @@ Public Module ModernTheme
     Public Sub RefreshContent(root As Control)
         ScaleForCurrentDpi(root)
         StyleContent(root)
+        ' Reset scroll so rebuilt sections don't stay on the old scroll position.
+        Dim form As Form = TryCast(root, Form)
+        If form Is Nothing Then form = root.FindForm()
+        If form IsNot Nothing Then form.AutoScrollPosition = New Point(0, 0)
         ' Dynamically rebuilt sections use English strings; translate them too
         ' when Amharic is active, so they don't revert to untranslated text.
         If LanguageService.IsAmharic Then LanguageService.ApplyTo(root)
