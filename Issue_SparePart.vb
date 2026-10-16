@@ -1008,6 +1008,8 @@ Private txtSearchName As TextBox
         Using pd As New Printing.PrintDocument()
             pd.DefaultPageSettings.PaperSize = New Printing.PaperSize("Receipt80mm", 300, 2800)
             pd.DefaultPageSettings.Margins = New System.Drawing.Printing.Margins(8, 8, 6, 6)
+            pd.PrinterSettings.DefaultPageSettings.PaperSize = pd.DefaultPageSettings.PaperSize
+            pd.PrinterSettings.DefaultPageSettings.Margins = pd.DefaultPageSettings.Margins
             AddHandler pd.PrintPage, Sub(s, eArgs)
                 Dim titleFont As New Font("Consolas", 14, FontStyle.Bold)
                 Dim headFont As New Font("Consolas", 10, FontStyle.Bold)
@@ -1055,8 +1057,11 @@ Private txtSearchName As TextBox
 
             Using dlg As New PrintPreviewDialog()
                 dlg.Document = pd
-                dlg.Width = 800
-                dlg.Height = 600
+                dlg.Width = 560
+                dlg.Height = 900
+                dlg.UseAntiAlias = True
+                dlg.Document.DefaultPageSettings.PaperSize = pd.DefaultPageSettings.PaperSize
+                dlg.Document.DefaultPageSettings.Margins = pd.DefaultPageSettings.Margins
                 dlg.ShowDialog(Me)
             End Using
         End Using
