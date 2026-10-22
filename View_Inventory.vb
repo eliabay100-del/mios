@@ -37,26 +37,27 @@ Public Class View_Inventory
 
     Private Sub SetupForm()
         Me.Text = "Inventory Management"
-        Me.Size = New Size(1080, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
-        ModernTheme.EnableVerticalScroll(Me, 760)
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
 
         Dim lblTitle As New Label With {
             .Text = "Spare parts inventory",
             .Font = New Font("Segoe UI", 24, FontStyle.Bold),
             .ForeColor = ModernTheme.PrimaryText,
-            .Location = New Point(22, 18),
-            .Size = New Size(400, 34)
+            .AutoSize = True,
+            .Location = New Point(22, 18)
         }
         Me.Controls.Add(lblTitle)
 
         Dim pnlSearch As New Panel With {
             .Location = New Point(22, 64),
             .Size = New Size(1010, 52),
-            .BackColor = Color.White
+            .BackColor = Color.White,
+            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         }
         txtSearch = ModernTheme.MakeTextBox()
         txtSearch.Location = New Point(12, 8)
@@ -81,7 +82,8 @@ Public Class View_Inventory
         Dim pnlCategory As New Panel With {
             .Location = New Point(22, 130),
             .Size = New Size(210, 420),
-            .BackColor = Color.White
+            .BackColor = Color.White,
+            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Bottom
         }
         Dim lblCategory As New Label With {
             .Text = "Categories",
@@ -117,7 +119,8 @@ Public Class View_Inventory
             .RowHeadersVisible = False,
             .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
             .AlternatingRowsDefaultCellStyle = New DataGridViewCellStyle With {.BackColor = ModernTheme.SurfaceAlt},
-            .Font = New Font("Segoe UI", 10)
+            .Font = New Font("Segoe UI", 10),
+            .Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
         }
         ModernTheme.StyleGrid(dgvInventory)
         dgvInventory.Columns.Add("Description", "Description")

@@ -13,11 +13,12 @@ Public Class InventoryAdjustmentForm
         If Not SecurityContext.HasPermission("INVENTORY_ADJUST") Then Throw New UnauthorizedAccessException("Your role cannot adjust inventory.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Inventory adjustment"
-        Me.Size = New Size(560, 420)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         Me.Controls.Add(New Label With {.Text = "Inventory adjustment", .Font = New Font("Segoe UI", 22, FontStyle.Bold), .Location = New Point(28, 24), .AutoSize = True})
         AddField("Part", cmbPart, 90)
         AddField("New quantity", txtNewQuantity, 140)

@@ -23,15 +23,17 @@ Public Class UserManagementForm
         If Not SecurityContext.HasPermission("USER_MANAGE") Then Throw New UnauthorizedAccessException("Only administrators can manage users.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Users and roles"
-        Me.Size = New Size(760, 620)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
 
         Me.Controls.Add(New Label With {.Text = "Users and roles", .Font = New Font("Segoe UI", 22, FontStyle.Bold), .Location = New Point(24, 22), .AutoSize = True})
         grid.Location = New Point(24, 76)
         grid.Size = New Size(700, 270)
+        grid.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
         grid.ReadOnly = True
         grid.AllowUserToAddRows = False
         grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect

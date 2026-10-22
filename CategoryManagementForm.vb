@@ -12,11 +12,12 @@ Public Class CategoryManagementForm
         If Not SecurityContext.HasRole("Admin") Then Throw New UnauthorizedAccessException("Only administrators can manage categories.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Manage categories"
-        Me.Size = New Size(520, 540)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
 
         Me.Controls.Add(New Label With {
             .Text = "Manage categories",
@@ -45,6 +46,7 @@ Public Class CategoryManagementForm
 
         lstCategories.Location = New Point(30, 160)
         lstCategories.Size = New Size(455, 230)
+        lstCategories.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
         lstCategories.Font = New Font("Segoe UI", 10)
         lstCategories.BackColor = ModernTheme.Surface
         lstCategories.ForeColor = ModernTheme.PrimaryText

@@ -41,6 +41,12 @@ Public Class View_PurchaseBatch
     End Sub
     Private Sub SetupForm()
         Me.Text = "Purchase Batch Tracking (FIFO)"
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         Me.Size = New Size(1080, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.FormBorderStyle = FormBorderStyle.FixedSingle

@@ -21,6 +21,7 @@ Public Class Add_SparePart
     Private savedSupplierName As String = ""
     Private txtSearchName As TextBox
     Private txtNewSupplierPhone As TextBox
+    Private cmbPaymentType As ComboBox
     Private allPartNumbers As List(Of String) = Nothing
 
     ' A brand-new supplier is not written to the database until the part it
@@ -39,10 +40,11 @@ Public Class Add_SparePart
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Add Spare Parts"
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.Size = New Size(720, 620)
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         CreateTitle()
         ShowSupplierCheckSection()
     End Sub
@@ -537,14 +539,33 @@ Public Class Add_SparePart
         LoadConditions()
         panel.Controls.Add(cmbCondition)
 
+        Dim lblPaymentType As New Label With {
+            .Text = "Payment type",
+            .Location = New Point(20, 310),
+            .Size = New Size(120, 25),
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .ForeColor = ModernTheme.MutedText
+        }
+        panel.Controls.Add(lblPaymentType)
+
+        cmbPaymentType = New ComboBox With {
+            .Location = New Point(150, 306),
+            .Size = New Size(160, 25),
+            .DropDownStyle = ComboBoxStyle.DropDownList,
+            .Font = New Font("Segoe UI", 10.0F)
+        }
+        cmbPaymentType.Items.AddRange(New Object() {"Credit", "Cash", "Bank transfer"})
+        cmbPaymentType.SelectedIndex = 0
+        panel.Controls.Add(cmbPaymentType)
+
         Dim btnSubmit As Button = ModernTheme.MakePrimaryButton("Add part")
-        btnSubmit.Location = New Point(150, 330)
+        btnSubmit.Location = New Point(150, 360)
         btnSubmit.Width = 160
         AddHandler btnSubmit.Click, AddressOf btnSubmit_Click
         panel.Controls.Add(btnSubmit)
 
         Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
-        btnCancel.Location = New Point(330, 330)
+        btnCancel.Location = New Point(330, 360)
         btnCancel.Width = 130
         btnCancel.BackColor = ModernTheme.SurfaceAlt
         btnCancel.ForeColor = ModernTheme.Danger
@@ -739,10 +760,18 @@ Public Class Add_SparePart
                     End If
 
                     Dim receiptID As Integer
-                    Dim receiptSql As String = "INSERT INTO mn.PurchaseReceipt (SupplierID, TotalAmount, AmountPaid, Status, Notes) OUTPUT INSERTED.ReceiptID VALUES (@supplierID, @total, 0, 'UNPAID', 'Received through Add Spare Part')"
+                    Dim isImmediatePayment As Boolean = cmbPaymentType IsNot Nothing AndAlso Not cmbPaymentType.IsDisposed AndAlso cmbPaymentType.SelectedIndex > 0
+                    Dim paymentMethod As String = If(cmbPaymentType Is Nothing OrElse cmbPaymentType.IsDisposed, "Credit", cmbPaymentType.Text)
+                    Dim totalAmount As Decimal = quantity * unitPrice
+                    Dim initialStatus As String = If(isImmediatePayment, "PAID", "UNPAID")
+                    Dim initialAmountPaid As Decimal = If(isImmediatePayment, totalAmount, 0D)
+                    
+                    Dim receiptSql As String = "INSERT INTO mn.PurchaseReceipt (SupplierID, TotalAmount, AmountPaid, Status, Notes) OUTPUT INSERTED.ReceiptID VALUES (@supplierID, @total, @paid, @status, 'Received through Add Spare Part')"
                     Using cmd As New SqlCommand(receiptSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@supplierID", currentSupplierID)
-                        cmd.Parameters.AddWithValue("@total", quantity * unitPrice)
+                        cmd.Parameters.AddWithValue("@total", totalAmount)
+                        cmd.Parameters.AddWithValue("@paid", initialAmountPaid)
+                        cmd.Parameters.AddWithValue("@status", initialStatus)
                         receiptID = Convert.ToInt32(cmd.ExecuteScalar())
                     End Using
 
@@ -755,10 +784,28 @@ Public Class Add_SparePart
                         cmd.ExecuteNonQuery()
                     End Using
 
-                    AccountingService.PostJournalEntry(conn, transaction, "PURCHASE", receiptID, "Inventory received from supplier", New List(Of JournalLineData) From {
-                        New JournalLineData With {.AccountCode = "1200", .Debit = quantity * unitPrice, .Credit = 0},
-                        New JournalLineData With {.AccountCode = "2000", .Debit = 0, .Credit = quantity * unitPrice}
-                    })
+                    If isImmediatePayment Then
+                        Dim cashAccountCode As String = If(paymentMethod = "Bank transfer", "1001", "1000")
+                        AccountingService.PostJournalEntry(conn, transaction, "PURCHASE", receiptID, $"{paymentMethod} purchase - inventory received", New List(Of JournalLineData) From {
+                            New JournalLineData With {.AccountCode = "1200", .Debit = totalAmount, .Credit = 0},
+                            New JournalLineData With {.AccountCode = cashAccountCode, .Debit = 0, .Credit = totalAmount}
+                        })
+                        
+                        Dim paymentSql As String = "INSERT INTO mn.Payment (Direction, PartyType, PartyID, ReferenceType, ReferenceID, Amount, Method, Notes) VALUES ('OUT', 'SUPPLIER', @partyID, 'PURCHASE_RECEIPT', @refID, @amount, @method, @notes)"
+                        Using cmd As New SqlCommand(paymentSql, conn, transaction)
+                            cmd.Parameters.AddWithValue("@partyID", currentSupplierID)
+                            cmd.Parameters.AddWithValue("@refID", receiptID)
+                            cmd.Parameters.AddWithValue("@amount", totalAmount)
+                            cmd.Parameters.AddWithValue("@method", paymentMethod)
+                            cmd.Parameters.AddWithValue("@notes", $"{paymentMethod} payment at time of purchase")
+                            cmd.ExecuteNonQuery()
+                        End Using
+                    Else
+                        AccountingService.PostJournalEntry(conn, transaction, "PURCHASE", receiptID, "Inventory received from supplier on credit", New List(Of JournalLineData) From {
+                            New JournalLineData With {.AccountCode = "1200", .Debit = totalAmount, .Credit = 0},
+                            New JournalLineData With {.AccountCode = "2000", .Debit = 0, .Credit = totalAmount}
+                        })
+                    End If
 
                     Dim batchSql As String = "INSERT INTO mn.PurchaseBatch (PartNumber, SupplierID, PurchaseDate, QuantityPurchased, QuantityRemaining, UnitCost) VALUES (@partNum, @supID, GETDATE(), @qty, @qty, @cost)"
                     Using cmd As New SqlCommand(batchSql, conn, transaction)

@@ -37,10 +37,12 @@ Public Class Customer
 
     Private Sub SetupForm()
         Me.Text = "Customer Management System"
-        Me.Size = New Size(1120, 620)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.MaximizeBox = False
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         Me.MinimizeBox = False
         ModernTheme.EnableVerticalScroll(Me, 700)
 

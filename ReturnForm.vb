@@ -16,11 +16,12 @@ Public Class ReturnForm
         If Not SecurityContext.HasPermission("RETURN_MANAGE") Then Throw New UnauthorizedAccessException("Your role cannot process returns.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Process return"
-        Me.Size = New Size(590, 560)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         Me.Controls.Add(New Label With {.Text = "Process return", .Font = New Font("Segoe UI", 22, FontStyle.Bold), .Location = New Point(28, 22), .AutoSize = True})
         AddField("Return type", cmbType, 78)
         AddField("Invoice / receipt ID", txtDocumentID, 126)

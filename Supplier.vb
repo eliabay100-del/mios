@@ -43,12 +43,12 @@ Public Class Supplier
         InitializeComponent()
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Supplier Management"
-        Me.Size = New Size(1120, 680)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
-        ModernTheme.EnableVerticalScroll(Me, 760)
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         InitializeSupplierForm()
     End Sub
 

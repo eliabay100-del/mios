@@ -18,11 +18,12 @@ Public Class PaymentForm
         End If
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Record payment"
-        Me.Size = New Size(560, 480)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
 
         Dim title As New Label With {
             .Text = "Record payment",

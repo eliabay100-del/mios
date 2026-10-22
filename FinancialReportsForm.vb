@@ -12,17 +12,19 @@ Public Class FinancialReportsForm
         If Not SecurityContext.HasPermission("REPORT_VIEW") Then Throw New UnauthorizedAccessException("Your role cannot view financial reports.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Financial reports"
-        Me.Size = New Size(720, 620)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
 
         Dim title As New Label With {.Text = "Financial reports", .Font = New Font("Segoe UI", 22, FontStyle.Bold), .Location = New Point(24, 22), .AutoSize = True}
         Me.Controls.Add(title)
 
         dgvReport.Location = New Point(24, 76)
         dgvReport.Size = New Size(650, 440)
+        dgvReport.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
         dgvReport.ReadOnly = True
         dgvReport.AllowUserToAddRows = False
         dgvReport.AllowUserToDeleteRows = False
@@ -66,18 +68,21 @@ Public Class FinancialReportsForm
         Dim btnRefresh As Button = ModernTheme.MakePrimaryButton("Refresh")
         btnRefresh.Location = New Point(540, 530)
         btnRefresh.Width = 130
+        btnRefresh.Anchor = AnchorStyles.Bottom Or AnchorStyles.Right
         AddHandler btnRefresh.Click, Sub() LoadReport()
         Me.Controls.Add(btnRefresh)
 
         Dim btnExport As Button = ModernTheme.MakeSecondaryButton("Export CSV")
         btnExport.Location = New Point(400, 530)
         btnExport.Width = 130
+        btnExport.Anchor = AnchorStyles.Bottom Or AnchorStyles.Right
         AddHandler btnExport.Click, Sub() ExportCSV()
         Me.Controls.Add(btnExport)
 
         Dim btnClose As Button = ModernTheme.MakeSecondaryButton("Close")
         btnClose.Location = New Point(260, 530)
         btnClose.Width = 130
+        btnClose.Anchor = AnchorStyles.Bottom Or AnchorStyles.Right
         AddHandler btnClose.Click, Sub() Me.Close()
         Me.Controls.Add(btnClose)
 

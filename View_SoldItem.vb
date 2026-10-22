@@ -43,12 +43,12 @@ Public Class View_SoldItem
 
     Private Sub SetupForm()
         Me.Text = "Sales & Issues Tracking"
-        Me.Size = New Size(1080, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
-        ModernTheme.EnableVerticalScroll(Me, 700)
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
 
         ' Title
         Dim lblTitle As New Label With {

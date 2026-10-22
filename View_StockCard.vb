@@ -38,12 +38,12 @@ Public Class View_StockCard
     ' ============ UI SETUP (FULL FIT LAYOUT) ============
     Private Sub SetupForm()
         Me.Text = "Stock Card Audit Trail"
-        Me.Size = New Size(1080, 700)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
-        ModernTheme.EnableVerticalScroll(Me, 700)
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
 
         ' 1. Title
         Dim lblTitle As New Label With {

@@ -11,11 +11,12 @@ Public Class FirstRunSetupForm
 
     Public Sub New()
         Me.Text = "Create MIOS user"
-        Me.Size = New Size(520, 400)
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         ModernTheme.ApplyWindowTheme(Me)
 
         Dim title As New Label With {

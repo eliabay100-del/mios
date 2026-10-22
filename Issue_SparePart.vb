@@ -25,6 +25,7 @@ Public Class Issue_SparePart
 Private txtSearchName As TextBox
     Private txtNewCustomerPhone As TextBox
     Private chkIncludeVat As CheckBox
+    Private cmbPaymentType As ComboBox
     Private allPartNumbers As List(Of String) = Nothing
     Private suppressCloseConfirmation As Boolean = False
 
@@ -38,10 +39,11 @@ Private txtSearchName As TextBox
         ' Form setup
         Me.Text = "Issue Spare Parts"
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.Size = New Size(780, 760)
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
 
         ' Create title
         CreateTitle()
@@ -113,15 +115,15 @@ Private txtSearchName As TextBox
 
     ' The items card is shared by the new- and existing-customer screens.
     Private Function BuildItemsCard(x As Integer, y As Integer) As Panel
-        Dim card As Panel = MakeCard(x, y, 680, 320)
-        card.Controls.Add(MakeSectionTitle("Items to issue", 20, 16))
-        card.Controls.Add(MakeColumnHeading("Part number", 30, 54, 200))
-        card.Controls.Add(MakeColumnHeading("Qty", 240, 54, 90))
-        card.Controls.Add(MakeColumnHeading("Unit price", 340, 54, 120))
+        Dim card As Panel = MakeCard(x, y, 680, 260)
+        card.Controls.Add(MakeSectionTitle("Items to issue", 20, 12))
+        card.Controls.Add(MakeColumnHeading("Part number", 30, 44, 200))
+        card.Controls.Add(MakeColumnHeading("Qty", 240, 44, 90))
+        card.Controls.Add(MakeColumnHeading("Unit price", 340, 44, 120))
 
         Dim container As New Panel With {
-            .Location = New Point(20, 80),
-            .Size = New Size(640, 160),
+            .Location = New Point(20, 68),
+            .Size = New Size(640, 130),
             .BackColor = ModernTheme.SurfaceAlt,
             .Padding = New Padding(10),
             .AutoScroll = True
@@ -130,8 +132,9 @@ Private txtSearchName As TextBox
         AddItemRow(container)
 
         Dim btnAddItem As Button = ModernTheme.MakeSecondaryButton("+ Add item")
-        btnAddItem.Location = New Point(20, 248)
+        btnAddItem.Location = New Point(20, 206)
         btnAddItem.Width = 150
+        btnAddItem.Height = 32
         btnAddItem.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnAddItem.Click, Sub(s, ev) AddItemRow(container)
         card.Controls.Add(btnAddItem)
@@ -141,37 +144,50 @@ Private txtSearchName As TextBox
 
     ' The notes/actions card is shared by the new- and existing-customer screens.
     Private Function BuildActionsCard(x As Integer, y As Integer, isNewCustomer As Boolean) As Panel
-        Dim card As Panel = MakeCard(x, y, 680, 230)
-        card.Controls.Add(MakeSectionTitle("Notes & actions", 20, 16))
+        Dim card As Panel = MakeCard(x, y, 680, 200)
+        card.Controls.Add(MakeSectionTitle("Notes & actions", 20, 12))
 
-        card.Controls.Add(MakeFieldLabel("Remarks", 20, 56))
+        card.Controls.Add(MakeFieldLabel("Remarks", 20, 44))
 
         txtRemarks = ModernTheme.MakeTextBox()
-        txtRemarks.Location = New Point(20, 82)
+        txtRemarks.Location = New Point(20, 66)
         txtRemarks.Width = 640
-        txtRemarks.Height = 60
+        txtRemarks.Height = 50
         txtRemarks.Multiline = True
         card.Controls.Add(txtRemarks)
 
         chkIncludeVat = New CheckBox With {
             .Text = "Include VAT (15%)",
-            .Location = New Point(20, 150),
-            .Size = New Size(200, 26),
+            .Location = New Point(20, 124),
+            .Size = New Size(180, 24),
             .Checked = True,
             .Font = New Font("Segoe UI", 9.5F, FontStyle.Bold),
             .ForeColor = ModernTheme.MutedText
         }
         card.Controls.Add(chkIncludeVat)
 
+        card.Controls.Add(MakeFieldLabel("Payment type", 220, 124, 100))
+        cmbPaymentType = New ComboBox With {
+            .Location = New Point(330, 120),
+            .Size = New Size(140, 26),
+            .DropDownStyle = ComboBoxStyle.DropDownList,
+            .Font = New Font("Segoe UI", 9.5F)
+        }
+        cmbPaymentType.Items.AddRange(New Object() {"Credit", "Cash", "Bank transfer"})
+        cmbPaymentType.SelectedIndex = 0
+        card.Controls.Add(cmbPaymentType)
+
         Dim btnIssue As Button = ModernTheme.MakePrimaryButton(If(isNewCustomer, "Save customer & issue", "Issue parts"))
-        btnIssue.Location = New Point(20, 184)
-        btnIssue.Width = 240
+        btnIssue.Location = New Point(480, 120)
+        btnIssue.Width = 180
+        btnIssue.Height = 32
         AddHandler btnIssue.Click, Sub(s, ev) ProcessIssue(isNewCustomer)
         card.Controls.Add(btnIssue)
 
         Dim btnCancel As Button = ModernTheme.MakeSecondaryButton("Cancel")
-        btnCancel.Location = New Point(272, 184)
-        btnCancel.Width = 140
+        btnCancel.Location = New Point(480, 158)
+        btnCancel.Width = 180
+        btnCancel.Height = 32
         btnCancel.BackColor = ModernTheme.SurfaceAlt
         AddHandler btnCancel.Click, AddressOf btnCancel_Click
         card.Controls.Add(btnCancel)
@@ -445,7 +461,7 @@ Private txtSearchName As TextBox
 
         Me.Controls.Add(infoCard)
         Me.Controls.Add(BuildItemsCard(30, 320))
-        Me.Controls.Add(BuildActionsCard(30, 660, True))
+        Me.Controls.Add(BuildActionsCard(30, 600, True))
         ModernTheme.RefreshContent(Me)
         FitToContent()
     End Sub
@@ -472,7 +488,7 @@ Private txtSearchName As TextBox
         Me.Controls.Add(customerCard)
 
         Me.Controls.Add(BuildItemsCard(30, 192))
-        Me.Controls.Add(BuildActionsCard(30, 532, False))
+        Me.Controls.Add(BuildActionsCard(30, 472, False))
         ModernTheme.RefreshContent(Me)
         FitToContent()
     End Sub
@@ -813,24 +829,52 @@ Private txtSearchName As TextBox
                     Next
 
                     Dim includeVat As Boolean = If(chkIncludeVat Is Nothing OrElse chkIncludeVat.IsDisposed, True, chkIncludeVat.Checked)
+                    Dim isImmediatePayment As Boolean = cmbPaymentType IsNot Nothing AndAlso Not cmbPaymentType.IsDisposed AndAlso cmbPaymentType.SelectedIndex > 0
+                    Dim paymentMethod As String = If(cmbPaymentType Is Nothing OrElse cmbPaymentType.IsDisposed, "Credit", cmbPaymentType.Text)
                     Dim vatAmount As Decimal = If(includeVat, Math.Round(totalRevenue * 0.15D, 2), 0D)
                     Dim invoiceTotal As Decimal = totalRevenue + vatAmount
-                    Dim updateInvoiceSql As String = "UPDATE mn.SalesInvoice SET Subtotal = @subtotal, TaxAmount = @tax, TotalAmount = @total WHERE InvoiceID = @invoiceID"
+                    Dim initialStatus As String = If(isImmediatePayment, "PAID", "UNPAID")
+                    Dim initialAmountPaid As Decimal = If(isImmediatePayment, invoiceTotal, 0D)
+                    
+                    Dim updateInvoiceSql As String = "UPDATE mn.SalesInvoice SET Subtotal = @subtotal, TaxAmount = @tax, TotalAmount = @total, AmountPaid = @paid, Status = @status WHERE InvoiceID = @invoiceID"
                     Using cmd As New SqlCommand(updateInvoiceSql, conn, transaction)
                         cmd.Parameters.AddWithValue("@subtotal", totalRevenue)
                         cmd.Parameters.AddWithValue("@tax", vatAmount)
                         cmd.Parameters.AddWithValue("@total", invoiceTotal)
+                        cmd.Parameters.AddWithValue("@paid", initialAmountPaid)
+                        cmd.Parameters.AddWithValue("@status", initialStatus)
                         cmd.Parameters.AddWithValue("@invoiceID", invoiceID)
                         cmd.ExecuteNonQuery()
                     End Using
 
-                    AccountingService.PostJournalEntry(conn, transaction, "SALE", invoiceID, "Spare parts issued to customer", New List(Of JournalLineData) From {
-                        New JournalLineData With {.AccountCode = "1100", .Debit = invoiceTotal, .Credit = 0},
-                        New JournalLineData With {.AccountCode = "4000", .Debit = 0, .Credit = totalRevenue},
-                        New JournalLineData With {.AccountCode = "2200", .Debit = 0, .Credit = vatAmount},
-                        New JournalLineData With {.AccountCode = "5000", .Debit = totalCOGSForInvoice, .Credit = 0},
-                        New JournalLineData With {.AccountCode = "1200", .Debit = 0, .Credit = totalCOGSForInvoice}
-                    })
+                    If isImmediatePayment Then
+                        Dim cashAccountCode As String = If(paymentMethod = "Bank transfer", "1001", "1000")
+                        AccountingService.PostJournalEntry(conn, transaction, "SALE", invoiceID, $"{paymentMethod} sale - spare parts issued", New List(Of JournalLineData) From {
+                            New JournalLineData With {.AccountCode = cashAccountCode, .Debit = invoiceTotal, .Credit = 0},
+                            New JournalLineData With {.AccountCode = "4000", .Debit = 0, .Credit = totalRevenue},
+                            New JournalLineData With {.AccountCode = "2200", .Debit = 0, .Credit = vatAmount},
+                            New JournalLineData With {.AccountCode = "5000", .Debit = totalCOGSForInvoice, .Credit = 0},
+                            New JournalLineData With {.AccountCode = "1200", .Debit = 0, .Credit = totalCOGSForInvoice}
+                        })
+                        
+                        Dim paymentSql As String = "INSERT INTO mn.Payment (Direction, PartyType, PartyID, ReferenceType, ReferenceID, Amount, Method, Notes) VALUES ('IN', 'CUSTOMER', @partyID, 'SALES_INVOICE', @refID, @amount, @method, @notes)"
+                        Using cmd As New SqlCommand(paymentSql, conn, transaction)
+                            cmd.Parameters.AddWithValue("@partyID", customerID)
+                            cmd.Parameters.AddWithValue("@refID", invoiceID)
+                            cmd.Parameters.AddWithValue("@amount", invoiceTotal)
+                            cmd.Parameters.AddWithValue("@method", paymentMethod)
+                            cmd.Parameters.AddWithValue("@notes", If(String.IsNullOrEmpty(remarks), $"{paymentMethod} payment at time of sale", CObj($"{paymentMethod} payment: " & remarks)))
+                            cmd.ExecuteNonQuery()
+                        End Using
+                    Else
+                        AccountingService.PostJournalEntry(conn, transaction, "SALE", invoiceID, "Spare parts issued to customer on credit", New List(Of JournalLineData) From {
+                            New JournalLineData With {.AccountCode = "1100", .Debit = invoiceTotal, .Credit = 0},
+                            New JournalLineData With {.AccountCode = "4000", .Debit = 0, .Credit = totalRevenue},
+                            New JournalLineData With {.AccountCode = "2200", .Debit = 0, .Credit = vatAmount},
+                            New JournalLineData With {.AccountCode = "5000", .Debit = totalCOGSForInvoice, .Credit = 0},
+                            New JournalLineData With {.AccountCode = "1200", .Debit = 0, .Credit = totalCOGSForInvoice}
+                        })
+                    End If
 
                     ' Commit transaction (PHP: sqlsrv_commit)
                     transaction.Commit()

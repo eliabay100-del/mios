@@ -10,11 +10,12 @@ Public Class BackupForm
         If Not SecurityContext.HasRole("Admin") Then Throw New UnauthorizedAccessException("Only administrators can create backups.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Database backup"
-        Me.Size = New Size(520, 250)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         Me.Controls.Add(New Label With {.Text = "Database backup", .Font = New Font("Segoe UI", 22, FontStyle.Bold), .Location = New Point(28, 24), .AutoSize = True})
         Me.Controls.Add(New Label With {.Text = "Choose a local .bak file location. SQL Server must have write access to the selected folder.", .Location = New Point(30, 78), .Size = New Size(440, 48), .ForeColor = ModernTheme.MutedText})
         Dim btn As Button = ModernTheme.MakePrimaryButton("Create backup")

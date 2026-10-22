@@ -14,11 +14,12 @@ Public Class ExpenseForm
         If Not SecurityContext.HasPermission("EXPENSE_MANAGE") Then Throw New UnauthorizedAccessException("Your role cannot record expenses.")
         ModernTheme.ApplyWindowTheme(Me)
         Me.Text = "Record expense"
-        Me.Size = New Size(560, 430)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.MaximizeBox = True
+        Me.MinimizeBox = True
+        Me.WindowState = FormWindowState.Maximized
+        Me.AutoScroll = True
         Me.Controls.Add(New Label With {.Text = "Record expense", .Font = New Font("Segoe UI", 22, FontStyle.Bold), .Location = New Point(28, 24), .AutoSize = True})
         AddField("Expense account", cmbAccount, 90)
         AddField("Amount", txtAmount, 140)
