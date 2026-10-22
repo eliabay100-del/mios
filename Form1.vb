@@ -270,22 +270,27 @@ Public Class Dashboard
                 form.ShowDialog()
             End Using
         End Sub)
-        AddDashboardAction("Outstanding Receivables", 495, 610, SecurityContext.HasPermission("REPORT_VIEW"), Sub()
+        AddDashboardAction("Outstanding Payables", 495, 610, SecurityContext.HasPermission("REPORT_VIEW"), Sub()
+            Using form As New OutstandingPayablesForm()
+                form.ShowDialog()
+            End Using
+        End Sub)
+        AddDashboardAction("Outstanding Receivables", 650, 610, SecurityContext.HasPermission("REPORT_VIEW"), Sub()
             Using form As New OutstandingReceivablesForm()
                 form.ShowDialog()
             End Using
         End Sub)
-        AddDashboardAction("Record Expense", 650, 610, SecurityContext.HasPermission("EXPENSE_MANAGE"), Sub()
+        AddDashboardAction("Record Expense", 805, 610, SecurityContext.HasPermission("EXPENSE_MANAGE"), Sub()
             Using form As New ExpenseForm()
                 form.ShowDialog()
             End Using
         End Sub)
-        AddDashboardAction("Process Return", 805, 610, SecurityContext.HasPermission("RETURN_MANAGE"), Sub()
+        AddDashboardAction("Process Return", 960, 610, SecurityContext.HasPermission("RETURN_MANAGE"), Sub()
             Using form As New ReturnForm()
                 form.ShowDialog()
             End Using
         End Sub)
-        AddDashboardAction("Database Backup", 960, 610, SecurityContext.HasRole("Admin"), Sub()
+        AddDashboardAction("Database Backup", 1115, 610, SecurityContext.HasRole("Admin"), Sub()
             OpenDialog(Function() New BackupForm())
         End Sub)
 

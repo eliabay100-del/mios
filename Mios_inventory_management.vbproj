@@ -139,6 +139,9 @@
     <Compile Include="OutstandingReceivablesForm.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="OutstandingPayablesForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="LanguageService.vb" />
     <Compile Include="PaymentForm.vb">
       <SubType>Form</SubType>
